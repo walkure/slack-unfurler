@@ -18,7 +18,6 @@ func fetchAkizuki(uri *url.URL) (blocks *[]slack.Block, err error) {
 
 	// get Title
 	title := doc.Find("#maincontents > div:nth-child(6)").Contents().Get(0).Data
-	fmt.Printf("title:%s\n", title)
 	//title := doc.Find("#maincontents > table > tbody > tr:nth-child(1) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(1) > td > h6").Text()
 	if title == "" {
 		return nil, errors.New("akizuki:cannot get image uri")

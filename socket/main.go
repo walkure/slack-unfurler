@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -36,14 +35,14 @@ func createSlackSocketClient() (*slack.Client, *socketmode.Client, error) {
 	api := slack.New(
 		botToken,
 		slack.OptionAppLevelToken(appToken),
-		slack.OptionDebug(true),
-		slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
+		//slack.OptionDebug(true),
+		//slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
 	)
 
 	client := socketmode.New(
 		api,
-		socketmode.OptionDebug(true),
-		socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
+		//socketmode.OptionDebug(true),
+		//socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
 	)
 
 	return api, client, nil

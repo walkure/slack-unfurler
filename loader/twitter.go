@@ -21,12 +21,12 @@ func fetchTwitter(uri *url.URL) (attachment *slack.Attachment, err error) {
 		return nil, errors.New("does not contains path")
 	}
 
-	index := strings.LastIndex(path, "/")
-	if index == -1 {
-		return nil, errors.New("path does not contains any slash")
+	params := strings.Split(path, "/")
+	if len(params) != 4 {
+		return nil, errors.New("not tweet uri")
 	}
 
-	id_str := path[index+1:]
+	id_str := params[3]
 
 	target := fmt.Sprintf("https://cdn.syndication.twimg.com/tweet-result?id=%s&lang=ja", id_str)
 

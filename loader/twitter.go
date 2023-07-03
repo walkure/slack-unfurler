@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -139,22 +138,69 @@ type tweetEntity struct {
 	IsEdited          bool   `json:"isEdited"`
 	IsStaleEdit       bool   `json:"isStaleEdit"`
 }
+type tw struct {
+	tweetEntity
+	QuotedTweet tweetEntity `json:"quoted_tweet"`
+}
 
 func expandTwitter(body io.Reader) (attachment *slack.Attachment, err error) {
-	tweet := &tweetEntity{}
+	tweet := &tw{}
 	if err := json.NewDecoder(body).Decode(tweet); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
 
-	attachment = &slack.Attachment{
-		AuthorName:    tweet.User.Name,
-		AuthorSubname: tweet.User.ScreenName,
-		AuthorLink:    fmt.Sprintf("https://twitter.com/i/user/%s", tweet.User.IDStr),
-		AuthorID:      tweet.User.IDStr,
-		AuthorIcon:    tweet.User.ProfileImageURLHTTPS,
-		Text:          tweet.Text,
-		Ts:            json.Number(strconv.FormatInt(tweet.CreatedAt.Unix(), 10)),
+	blocks := []slack.Block{
+		&slack.ContextBlock{
+			Type: slack.MBTContext,
+			ContextElements: slack.ContextElements{
+				Elements: []slack.MixedElement{
+					slack.ImageBlockElement{
+						Type:     slack.METImage,
+						ImageURL: tweet.User.ProfileImageURLHTTPS,
+						AltText:  tweet.User.ScreenName,
+					},
+					slack.TextBlockObject{
+						Type: "mrkdwn",
+						Text: fmt.Sprintf("<https://twitter.com/i/user/%s|%s>",
+							tweet.User.IDStr, tweet.User.Name),
+					},
+					slack.TextBlockObject{
+						Type: "mrkdwn",
+						Text: fmt.Sprintf("<https://twitter.com/i/user/%s|@%s>",
+							tweet.User.IDStr, tweet.User.ScreenName),
+					},
+				},
+			},
+		},
+		&slack.SectionBlock{
+			Type: slack.MBTSection,
+			Text: &slack.TextBlockObject{
+				Type: "plain_text",
+				Text: tweet.Text,
+			},
+		},
 	}
 
+	for _, p := range tweet.Photos {
+		blocks = append(blocks, &slack.ImageBlock{
+			Type:     slack.MBTImage,
+			ImageURL: p.URL,
+			AltText:  p.URL,
+		})
+	}
+
+	blocks = append(blocks, &slack.ContextBlock{
+		Type: slack.MBTContext,
+		ContextElements: slack.ContextElements{
+			Elements: []slack.MixedElement{
+				slack.TextBlockObject{
+					Type: "plain_text",
+					Text: tweet.CreatedAt.Format(time.UnixDate),
+				},
+			},
+		},
+	})
+
+	attachment = &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}
 	return attachment, nil
 }

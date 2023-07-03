@@ -23,6 +23,12 @@ func GetUnfluredAttachment(target string) (attachment *slack.Attachment, err err
 	if strings.HasPrefix(target, "https://akizukidenshi.com/catalog/g/g") {
 		return fetchAkizuki(uri)
 	}
+
+	if strings.HasPrefix(target, "https://twitter.com/") ||
+		strings.HasPrefix(target, "https://mobile.twitter.com/") {
+		return fetchTwitter(uri)
+	}
+
 	return nil, fmt.Errorf("%s not supported site", target)
 
 }

@@ -25,7 +25,7 @@ func handleLinkSharedEvent(ctx context.Context, api *slack.Client, ev *slackeven
 	for _, target := range ev.Links {
 		attachment, err := loader.GetUnfluredAttachment(target.URL)
 		if err != nil {
-			fmt.Printf("cannot unfurl %s : %v", target.URL, err)
+			fmt.Printf("cannot unfurl %s : %v\n", target.URL, err)
 			continue
 		}
 		data[target.URL] = *attachment

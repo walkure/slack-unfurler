@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-func GetUnfluredBlocks(target string) (blocks *[]slack.Block, err error) {
+func GetUnfluredAttachment(target string) (attachment *slack.Attachment, err error) {
 	uri, err := url.Parse(target)
 	if err != nil {
 		return nil, err

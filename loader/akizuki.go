@@ -9,7 +9,7 @@ import (
 	"github.com/slack-go/slack"
 )
 
-func fetchAkizuki(uri *url.URL) (blocks *[]slack.Block, err error) {
+func fetchAkizuki(uri *url.URL) (attachment *slack.Attachment, err error) {
 
 	doc, err := fetchDocument(uri)
 	if err != nil {
@@ -52,7 +52,7 @@ func fetchAkizuki(uri *url.URL) (blocks *[]slack.Block, err error) {
 		return nil, errors.New("akizuki:cannot get price")
 	}
 
-	blocks = &[]slack.Block{
+	blocks := []slack.Block{
 		slack.SectionBlock{
 			Type: slack.MBTSection,
 			Text: &slack.TextBlockObject{
@@ -87,5 +87,7 @@ func fetchAkizuki(uri *url.URL) (blocks *[]slack.Block, err error) {
 		},
 	}
 
-	return blocks, nil
+	return &slack.Attachment{
+		Blocks: slack.Blocks{BlockSet: blocks},
+	}, nil
 }

@@ -23,14 +23,12 @@ func handleLinkSharedEvent(ctx context.Context, api *slack.Client, ev *slackeven
 
 	data := make(map[string]slack.Attachment)
 	for _, target := range ev.Links {
-		blocks, err := loader.GetUnfluredBlocks(target.URL)
+		attachment, err := loader.GetUnfluredAttachment(target.URL)
 		if err != nil {
 			fmt.Printf("cannot unfurl %s : %v", target.URL, err)
 			continue
 		}
-		data[target.URL] = slack.Attachment{
-			Blocks: slack.Blocks{BlockSet: *blocks},
-		}
+		data[target.URL] = *attachment
 	}
 	_, _, err := postMessageWithRetry(ctx, api, ev.Channel, slack.MsgOptionUnfurl(ev.MessageTimeStamp, data))
 

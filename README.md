@@ -6,6 +6,8 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 
 - [秋月電子](https://akizukidenshi.com/)
   - [goquery](https://github.com/PuerkitoBio/goquery)でスクレイピング
+- [Twitter](https://twitter.com/)
+  - 埋め込みTweetから引っ張ってくる暫定系
 
 ## 起動方法
 

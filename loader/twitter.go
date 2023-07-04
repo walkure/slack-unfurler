@@ -192,7 +192,7 @@ func expandTwitter(body io.Reader) (attachment *slack.Attachment, err error) {
 			Elements: []slack.MixedElement{
 				slack.TextBlockObject{
 					Type: "plain_text",
-					Text: tweet.CreatedAt.Format(time.UnixDate),
+					Text: tweet.CreatedAt.Local().Format(time.UnixDate),
 				},
 			},
 		},

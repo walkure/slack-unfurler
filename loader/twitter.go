@@ -161,13 +161,10 @@ func expandTwitter(body io.Reader) (attachment *slack.Attachment, err error) {
 					},
 					slack.TextBlockObject{
 						Type: "mrkdwn",
-						Text: fmt.Sprintf("<https://twitter.com/i/user/%s|%s>",
-							tweet.User.IDStr, tweet.User.Name),
-					},
-					slack.TextBlockObject{
-						Type: "mrkdwn",
-						Text: fmt.Sprintf("<https://twitter.com/i/user/%s|@%s>",
-							tweet.User.IDStr, tweet.User.ScreenName),
+						Text: fmt.Sprintf("<https://twitter.com/%s|*%s*> <https://twitter.com/%s|@%s>",
+							tweet.User.ScreenName, tweet.User.Name,
+							tweet.User.ScreenName, tweet.User.ScreenName,
+						),
 					},
 				},
 			},

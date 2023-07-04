@@ -17,4 +17,4 @@ COPY --from=builder /etc/passwd /etc/group /etc/
 COPY --from=builder --chown=nonroot:nonroot /bin/socket /app/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-ENTRYPOINT /app/socket
+ENTRYPOINT ["/app/socket"]

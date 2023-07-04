@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-func GetUnfluredAttachment(target string) (attachment *slack.Attachment, err error) {
+func GetUnfluredAttachment(domain, target string) (attachment *slack.Attachment, err error) {
 	uri, err := url.Parse(target)
 	if err != nil {
 		return nil, err
@@ -24,8 +24,7 @@ func GetUnfluredAttachment(target string) (attachment *slack.Attachment, err err
 		return fetchAkizuki(uri)
 	}
 
-	if strings.HasPrefix(target, "https://twitter.com/") ||
-		strings.HasPrefix(target, "https://mobile.twitter.com/") {
+	if domain == "twitter.com" {
 		return fetchTwitter(uri)
 	}
 

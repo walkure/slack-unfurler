@@ -22,7 +22,7 @@ func fetchTwitter(uri *url.URL) (attachment *slack.Attachment, err error) {
 	}
 
 	params := strings.Split(path, "/")
-	if len(params) != 4 {
+	if len(params) < 3 {
 		return nil, errors.New("not tweet uri")
 	}
 

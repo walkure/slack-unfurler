@@ -11,6 +11,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/saintfish/chardet"
 	"github.com/slack-go/slack"
+	"github.com/walkure/slack-unfurler/loader/twitter"
 	"golang.org/x/net/html/charset"
 )
 
@@ -25,7 +26,7 @@ func GetUnfluredAttachment(domain, target string) (attachment *slack.Attachment,
 	}
 
 	if domain == "twitter.com" {
-		return fetchTwitter(uri)
+		return twitter.FetchTwitter(uri)
 	}
 
 	return nil, fmt.Errorf("%s not supported site", target)

@@ -1,10 +1,8 @@
 package twitter
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"sort"
 	"strings"
@@ -28,40 +26,17 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 
 	id_str := params[3]
 
-	resp, err := fetchFromSyndication(id_str)
+	atch, err := fetchFromSyndication(id_str)
 
-	if errors.Is(err, errorNotFoundOrNSFW) {
-		resp, err = fetchFromAPI(id_str)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
+	if err == nil {
+		return atch, nil
+	}
+
+	if !errors.Is(err, errorNotFoundOrNSFW) {
 		return nil, err
 	}
 
-	defer resp.Close()
-
-	return expandTwitter(resp)
-}
-
-type twJSONTime time.Time
-
-func (tt *twJSONTime) UnmarshalJSON(data []byte) error {
-	// Ignore null, like in the main JSON package.
-	if string(data) == "null" {
-		return nil
-	}
-
-	var err error
-	t, err := time.Parse(`"`+time.RFC3339+`"`, string(data))
-
-	if err != nil {
-		t, err = time.Parse(`"`+time.RubyDate+`"`, string(data))
-	}
-
-	*tt = twJSONTime(t)
-
-	return err
+	return fetchFromAPI(id_str)
 }
 
 type urlShortenEntity struct {
@@ -94,71 +69,70 @@ func extractShortenURL(text string, urls []urlShortenEntity) string {
 	}
 
 	return string(proceed)
-
 }
 
-func expandTwitter(body io.Reader) (attachment *slack.Attachment, err error) {
-	tweet := &tw{}
-	if err := json.NewDecoder(body).Decode(tweet); err != nil {
-		return nil, fmt.Errorf("json decode: %w", err)
+func getTweetBlock(tweet string, shortenEntities []urlShortenEntity) *slack.SectionBlock {
+	txt := extractShortenURL(tweet, shortenEntities)
+	return &slack.SectionBlock{
+		Type: slack.MBTSection,
+		Text: &slack.TextBlockObject{
+			Type: "mrkdwn",
+			Text: txt,
+		},
 	}
+}
 
-	txt := tweet.Text
-	if tweet.Text == "" {
-		txt = tweet.FullText
-	}
+type userEntity struct {
+	IDStr                string `json:"id_str"`
+	Name                 string `json:"name"`
+	ProfileImageURLHTTPS string `json:"profile_image_url_https"`
+	ScreenName           string `json:"screen_name"`
+}
 
-	txt = extractShortenURL(txt, append(tweet.Entities.Media, tweet.Entities.Urls...))
-
-	blocks := []slack.Block{
-		&slack.ContextBlock{
-			Type: slack.MBTContext,
-			ContextElements: slack.ContextElements{
-				Elements: []slack.MixedElement{
-					slack.ImageBlockElement{
-						Type:     slack.METImage,
-						ImageURL: tweet.User.ProfileImageURLHTTPS,
-						AltText:  tweet.User.ScreenName,
-					},
-					slack.TextBlockObject{
-						Type: "mrkdwn",
-						Text: fmt.Sprintf("<https://twitter.com/%s|*%s*> <https://twitter.com/%s|@%s>",
-							tweet.User.ScreenName, tweet.User.Name,
-							tweet.User.ScreenName, tweet.User.ScreenName,
-						),
-					},
+func getUserBlock(user userEntity) *slack.ContextBlock {
+	return &slack.ContextBlock{
+		Type: slack.MBTContext,
+		ContextElements: slack.ContextElements{
+			Elements: []slack.MixedElement{
+				slack.ImageBlockElement{
+					Type:     slack.METImage,
+					ImageURL: user.ProfileImageURLHTTPS,
+					AltText:  user.ScreenName,
+				},
+				slack.TextBlockObject{
+					Type: "mrkdwn",
+					Text: fmt.Sprintf("<https://twitter.com/%s|*%s*> <https://twitter.com/%s|@%s>",
+						user.ScreenName, user.Name,
+						user.ScreenName, user.ScreenName,
+					),
 				},
 			},
 		},
-		&slack.SectionBlock{
-			Type: slack.MBTSection,
-			Text: &slack.TextBlockObject{
-				Type: "mrkdwn",
-				Text: txt,
-			},
-		},
 	}
+}
 
-	for _, p := range tweet.Photos {
-		blocks = append(blocks, &slack.ImageBlock{
-			Type:     slack.MBTImage,
-			ImageURL: p.URL,
-			AltText:  p.URL,
-		})
-	}
-
-	blocks = append(blocks, &slack.ContextBlock{
+func getCreatedAtBlock(createdAt time.Time) *slack.ContextBlock {
+	return &slack.ContextBlock{
 		Type: slack.MBTContext,
 		ContextElements: slack.ContextElements{
 			Elements: []slack.MixedElement{
 				slack.TextBlockObject{
 					Type: "plain_text",
-					Text: time.Time(tweet.CreatedAt).Local().Format(time.UnixDate),
+					Text: time.Time(createdAt).Local().Format(time.UnixDate),
 				},
 			},
 		},
-	})
+	}
+}
 
-	attachment = &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}
-	return attachment, nil
+type mediaEntity struct {
+	ID            int64  `json:"id"`
+	IDStr         string `json:"id_str"`
+	Indices       []int  `json:"indices"`
+	MediaURL      string `json:"media_url"`
+	MediaURLHTTPS string `json:"media_url_https"`
+	URL           string `json:"url"`
+	DisplayURL    string `json:"display_url"`
+	ExpandedURL   string `json:"expanded_url"`
+	Type          string `json:"type"`
 }

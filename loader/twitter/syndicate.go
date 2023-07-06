@@ -26,8 +26,8 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 	}
 	defer resp.Body.Close()
 
-	tweet := &tweetEntity{}
-	if err := json.NewDecoder(resp.Body).Decode(tweet); err != nil {
+	tweet := tweetEntity{}
+	if err := json.NewDecoder(resp.Body).Decode(&tweet); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
 

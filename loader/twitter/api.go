@@ -23,7 +23,7 @@ const csrfToken = "12345678901234567890123456789012"
 
 var authTokenList = os.Getenv("TWITTER_AUTH_TOKENS_FROM_BROWSER")
 
-func fetchFromAPI(id_str string) (*slack.Attachment, error) {
+func fetchFromAPI(idStr string) (*slack.Attachment, error) {
 
 	if authTokenList == "" {
 		return nil, errors.New("cannot get auth_token. disable apicall")
@@ -33,7 +33,7 @@ func fetchFromAPI(id_str string) (*slack.Attachment, error) {
 	rand.Shuffle(len(authTokens), func(i, j int) { authTokens[i], authTokens[j] = authTokens[j], authTokens[i] })
 
 	for _, authToken := range authTokens {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("https://api.twitter.com/1.1/statuses/show/%s.json?tweet_mode=extended&cards_platform=Web-12&include_cards=1&include_reply_count=1&include_user_entities=0", id_str), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("https://api.twitter.com/1.1/statuses/show/%s.json?tweet_mode=extended&cards_platform=Web-12&include_cards=1&include_reply_count=1&include_user_entities=0", idStr), nil)
 		req.Header.Set("Authorization", authHeader)
 		req.Header.Set("Cookie", fmt.Sprintf("auth_token=%s; ct0=%s; ", authToken, csrfToken))
 		req.Header.Set("x-twitter-active-user", "yes")

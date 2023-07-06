@@ -10,8 +10,8 @@ import (
 	"github.com/slack-go/slack"
 )
 
-func fetchFromSyndication(id_str string) (*slack.Attachment, error) {
-	target := fmt.Sprintf("https://cdn.syndication.twimg.com/tweet-result?id=%s&lang=ja", id_str)
+func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
+	target := fmt.Sprintf("https://cdn.syndication.twimg.com/tweet-result?id=%s&lang=ja", idStr)
 
 	resp, err := http.Get(target)
 	if err != nil {

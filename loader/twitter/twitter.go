@@ -24,9 +24,9 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 		return nil, errors.New("not tweet uri")
 	}
 
-	id_str := params[3]
+	idStr := params[3]
 
-	atch, err := fetchFromSyndication(id_str)
+	atch, err := fetchFromSyndication(idStr)
 
 	if err == nil {
 		return atch, nil
@@ -36,7 +36,7 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 		return nil, err
 	}
 
-	return fetchFromAPI(id_str)
+	return fetchFromAPI(idStr)
 }
 
 type urlShortenEntity struct {

@@ -18,7 +18,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
    2. その上で、環境変数`UNFURL_TWITTER_VIDEO`に何かしらの値を設定。
 4. OAuth & PermissionsでBot Tokenに `links:write` を追加
    1. `links:read`は「App unfurl domains」した際に追加されるっぽい。
-   2. Twitter Videoを展開する場合は`links.embed:write`も必要。
+   2. Twitter Videoを展開する場合は`links.embed:write`も必要。忘れると展開時に`cannot_parse_attachment`と出る。
 5. 環境変数 `SLACK_BOT_TOKEN` と `SLACK_APP_TOKEN` によしなにトークンを設定する。
 6. Twitter APIで展開する場合は、ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`にカンマ区切りで設定する。
    1. この値は1年間有効の模様。

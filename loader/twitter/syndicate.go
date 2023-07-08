@@ -46,6 +46,25 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 
 	blocks = append(blocks, getCreatedAtBlock(tweet.CreatedAt))
 
+	if tweet.QuotedTweet.IDStr != "" {
+		blocks = append(blocks,
+			getUserBlock(tweet.QuotedTweet.User),
+			getTweetBlock(tweet.QuotedTweet.Text,
+				append(tweet.QuotedTweet.Entities.Media,
+					tweet.QuotedTweet.Entities.Urls...)),
+		)
+
+		for _, p := range tweet.QuotedTweet.Photos {
+			blocks = append(blocks, &slack.ImageBlock{
+				Type:     slack.MBTImage,
+				ImageURL: p.URL,
+				AltText:  p.URL,
+			})
+		}
+
+		blocks = append(blocks, getCreatedAtBlock(tweet.QuotedTweet.CreatedAt))
+	}
+
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil
 }
 

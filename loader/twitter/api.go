@@ -87,6 +87,25 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 
 	blocks = append(blocks, getCreatedAtBlock(time.Time(status.CreatedAt)))
 
+	if status.QuotedStatus.IDStr != "" {
+		blocks = append(blocks,
+			getUserBlock(status.QuotedStatus.User),
+			getTweetBlock(status.QuotedStatus.FullText,
+				append(status.QuotedStatus.Entities.Media,
+					status.QuotedStatus.Entities.Urls...)),
+		)
+
+		for _, p := range status.QuotedStatus.ExtendedEntities.Media {
+			blocks = append(blocks, &slack.ImageBlock{
+				Type:     slack.MBTImage,
+				ImageURL: p.MediaURLHTTPS,
+				AltText:  p.DisplayURL,
+			})
+		}
+
+		blocks = append(blocks, getCreatedAtBlock(time.Time(status.QuotedStatus.CreatedAt)))
+	}
+
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil
 }
 

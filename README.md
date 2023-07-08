@@ -8,21 +8,48 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
   - [goquery](https://github.com/PuerkitoBio/goquery)でスクレイピング
 - [Twitter](https://twitter.com/)
   - 埋め込みTweetから引用を試み、出来なかったらAPIを叩きます。
-  - 動画埋め込みの展開には非対応です。
 
 ## 起動方法
 
 1. SlackのAppを[作成](https://api.slack.com/apps?new_app=1)
 2. Socket-modeを有効にする(まだWebhookは作ってないので)
 3. Event Subscriptionsで「App unfurl domains」を選んでよしなにドメインを追加
+   1. Twitter videoを展開する場合は、`twitter.com`だけでなく`twimg.com`も追加する。
+   2. その上で、環境変数`UNFURL_TWITTER_VIDEO`に何かしらの値を設定。
 4. OAuth & PermissionsでBot Tokenに `links:write` を追加
    1. `links:read`は「App unfurl domains」した際に追加されるっぽい。
 5. 環境変数 `SLACK_BOT_TOKEN` と `SLACK_APP_TOKEN` によしなにトークンを設定する。
-6. Twitter APIで展開する場合は、ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`に設定する。
+6. Twitter APIで展開する場合は、ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`にカンマ区切りで設定する。
    1. この値は1年間有効の模様。
    2. 念のために日頃使ってるアカウントの値は使わないほうがいいでしょう。
    3. これを設定した状態で`USE_TWITTER_SYNDICATION`に何かしらの値を入れると、APIを叩く前に埋め込みTweet引用を試します。
 7. 起動
+
+### Tweet展開について
+
+Twitterの展開は、埋め込みTweetを取得する方法とAPI経由する方法の２つを使っています。それぞれpros/consがあるので、お好みに応じて設定してください。
+
+### 埋め込みTweetを取得
+
+- pros
+  - token不要
+  - 複数の動画が添付されたTweetに対応
+- cons
+  - NSFW Tweet非対応
+    - 全く存在しないものとする扱いをする
+    - NSFW TweetをQTしたTweetを展開する場合も、QTしたNSFW Tweetが全く存在しないとみなすので存在すらわからない。
+
+### API経由
+
+- pros
+  - NSFW Tweet対応
+  - RT数も取れる
+    - 現状は展開していません
+- cons
+  - `auth_token`が必要
+  - 複数の動画が添付されたTweetに非対応で、最初の一つしか取れない。
+    - 動画と静止画を埋め込んだ場合も最初のメディアしか取れない。
+    - 静止画のみ複数埋め込んだ場合は取れる。
 
 ## 参考文献
 
@@ -30,7 +57,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 
 ## 言語
 
-go 1.17
+go 1.20
 
 ## todo
 

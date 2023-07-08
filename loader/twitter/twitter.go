@@ -14,6 +14,7 @@ import (
 
 var errorNotFoundOrNSFW = errors.New("http:not found or NSFW content")
 var useSyndication = os.Getenv("USE_TWITTER_SYNDICATION")
+var unfurlVideo = os.Getenv("UNFURL_TWITTER_VIDEO")
 
 func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 	path := uri.Path
@@ -139,4 +140,53 @@ type mediaEntity struct {
 	DisplayURL    string `json:"display_url"`
 	ExpandedURL   string `json:"expanded_url"`
 	Type          string `json:"type"`
+	VideoInfo     struct {
+		AspectRatio    []int `json:"aspect_ratio"`
+		DurationMillis int   `json:"duration_millis"`
+		Variants       []struct {
+			Bitrate     int    `json:"bitrate,omitempty"`
+			ContentType string `json:"content_type"`
+			URL         string `json:"url"`
+		} `json:"variants"`
+	} `json:"video_info"`
+}
+
+func getMediaBlocks(media mediaEntity) slack.Block {
+	if media.Type == "photo" {
+		return slack.ImageBlock{
+			Type:     slack.MBTImage,
+			ImageURL: media.MediaURLHTTPS,
+			AltText:  media.DisplayURL,
+		}
+	}
+
+	if media.Type == "video" && unfurlVideo != "" {
+		videoURL := ""
+		bitrate := 0
+		for _, v := range media.VideoInfo.Variants {
+			if v.ContentType != "video/mp4" {
+				continue
+			}
+
+			// use best bitrate
+			if bitrate < v.Bitrate {
+				bitrate = v.Bitrate
+				videoURL = v.URL
+				//fmt.Printf("use:%d %s\n", bitrate, videoURL)
+			}
+		}
+		return slack.VideoBlock{
+			Type:         slack.MBTVideo,
+			VideoURL:     videoURL,
+			ThumbnailURL: media.MediaURLHTTPS,
+			AltText:      media.DisplayURL,
+			TitleURL:     media.ExpandedURL,
+			Title: &slack.TextBlockObject{
+				Type: "plain_text",
+				Text: media.DisplayURL,
+			},
+		}
+	}
+
+	return nil
 }

@@ -36,12 +36,10 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 		getTweetBlock(tweet.Text, append(tweet.Entities.Media, tweet.Entities.Urls...)),
 	}
 
-	for _, p := range tweet.Photos {
-		blocks = append(blocks, &slack.ImageBlock{
-			Type:     slack.MBTImage,
-			ImageURL: p.URL,
-			AltText:  p.URL,
-		})
+	for _, p := range tweet.MediaDetails {
+		if block := getMediaBlocks(p); block != nil {
+			blocks = append(blocks, block)
+		}
 	}
 
 	blocks = append(blocks, getCreatedAtBlock(tweet.CreatedAt))

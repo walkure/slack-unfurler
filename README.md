@@ -7,7 +7,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 - [秋月電子](https://akizukidenshi.com/)
   - [goquery](https://github.com/PuerkitoBio/goquery)でスクレイピング
 - [Twitter](https://twitter.com/)
-  - 埋め込みTweetから引っ張ってみて、出来なかったらAPIを叩きます。
+  - 埋め込みTweetから引用を試み、出来なかったらAPIを叩きます。
   - 動画埋め込みの展開には非対応です。
 
 ## 起動方法
@@ -21,6 +21,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 6. Twitter APIで展開する場合は、ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`に設定する。
    1. この値は1年間有効の模様。
    2. 念のために日頃使ってるアカウントの値は使わないほうがいいでしょう。
+   3. これを設定した状態で`USE_TWITTER_SYNDICATION`に何かしらの値を入れると、APIを叩く前に埋め込みTweet引用を試します。
 7. 起動
 
 ## 参考文献

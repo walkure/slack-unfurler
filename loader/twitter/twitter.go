@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 )
 
 var errorNotFoundOrNSFW = errors.New("http:not found or NSFW content")
+var useSyndication = os.Getenv("USE_TWITTER_SYNDICATION")
 
 func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 	path := uri.Path
@@ -26,14 +28,16 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 
 	idStr := params[3]
 
-	atch, err := fetchFromSyndication(idStr)
+	if authTokenList == "" || useSyndication != "" {
+		atch, err := fetchFromSyndication(idStr)
 
-	if err == nil {
-		return atch, nil
-	}
+		if err == nil {
+			return atch, nil
+		}
 
-	if !errors.Is(err, errorNotFoundOrNSFW) {
-		return nil, err
+		if !errors.Is(err, errorNotFoundOrNSFW) {
+			return nil, err
+		}
 	}
 
 	return fetchFromAPI(idStr)

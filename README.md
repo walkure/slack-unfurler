@@ -14,7 +14,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 1. SlackのAppを[作成](https://api.slack.com/apps?new_app=1)
 2. Socket-modeを有効にする(まだWebhookは作ってないので)
 3. Event Subscriptionsで「App unfurl domains」を選んでよしなにドメインを追加
-   1. Twitter videoを展開する場合は、`twitter.com`だけでなく`twimg.com`も追加する。
+   1. Twitter videoを展開する場合は、`twitter.com`だけでなく`video.twimg.com`も追加する。
    2. その上で、環境変数`UNFURL_TWITTER_VIDEO`に何かしらの値を設定。
 4. OAuth & PermissionsでBot Tokenに `links:write` を追加
    1. `links:read`は「App unfurl domains」した際に追加されるっぽい。

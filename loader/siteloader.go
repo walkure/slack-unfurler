@@ -29,6 +29,10 @@ func GetUnfluredAttachment(domain, target string) (attachment *slack.Attachment,
 		return twitter.FetchTwitter(uri)
 	}
 
+	if strings.HasPrefix(target, "https://pbs.twimg.com/media/") {
+		return twitter.MakePbsBlock(uri)
+	}
+
 	return nil, fmt.Errorf("%s not supported site", target)
 
 }

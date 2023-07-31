@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
@@ -49,6 +50,15 @@ func createSlackSocketClient() (*slack.Client, *socketmode.Client, error) {
 }
 
 func main() {
+
+	// caches 128 entities
+	cache, err := lru.New[string, *slack.Attachment](128)
+
+	if err != nil {
+		fmt.Printf("cannot create cache:%v", err)
+		os.Exit(-2)
+	}
+
 	api, client, err := createSlackSocketClient()
 	if err != nil {
 		fmt.Printf("cannot establish connectins:%v", err)
@@ -76,7 +86,7 @@ func main() {
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
 					go func() {
-						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent)
+						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, cache)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 						}

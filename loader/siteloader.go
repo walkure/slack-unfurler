@@ -2,6 +2,7 @@ package loader
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,13 +10,29 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/saintfish/chardet"
 	"github.com/slack-go/slack"
 	"github.com/walkure/slack-unfurler/loader/twitter"
 	"golang.org/x/net/html/charset"
 )
 
-func GetUnfluredAttachment(domain, target string) (attachment *slack.Attachment, err error) {
+func GetUnfluredAttachment(ctx context.Context, domain, target string, cache *lru.Cache[string, *slack.Attachment]) (attachment *slack.Attachment, err error) {
+	if entry, ok := cache.Get(target); ok {
+		return entry, nil
+	}
+
+	attachment, err = doGetUnfluredAttachment(ctx, domain, target)
+	if err != nil {
+		return nil, err
+	}
+
+	cache.Add(target, attachment)
+
+	return attachment, nil
+}
+
+func doGetUnfluredAttachment(ctx context.Context, domain, target string) (attachment *slack.Attachment, err error) {
 	uri, err := url.Parse(target)
 	if err != nil {
 		return nil, err

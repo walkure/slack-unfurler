@@ -27,7 +27,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
    2. `auth_token`を送って呼ばれる`TweetResultByRestId`を呼び出すURIのうちID部分を`TWITTER_API_ID`に設定
       1. `https://twitter.com/i/api/graphql/0hWvDhmW8YQ-S_ib3azIrw/TweetResultByRestId?variables(以下略)`でリクエストを送っている場合`0hWvDhmW8YQ-S_ib3azIrw`の部分
       2. どうやら時々変わる様子。
-   3. これを設定した状態で`USE_TWITTER_SYNDICATION`に何かしらの値を入れると、APIを叩く前に埋め込みTweet引用を試します。
+   3. API呼び出しでの展開に失敗する場合 or 設定がない場合は埋め込みTweet展開を試します。このときNSFW Tweetは展開できません。
 7. 起動
 
 ### Tweet展開について

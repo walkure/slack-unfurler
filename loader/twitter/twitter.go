@@ -12,8 +12,6 @@ import (
 	"github.com/slack-go/slack"
 )
 
-var errorNotFoundOrNSFW = errors.New("http:not found or NSFW content")
-var useSyndication = os.Getenv("USE_TWITTER_SYNDICATION")
 var unfurlVideo = os.Getenv("UNFURL_TWITTER_VIDEO")
 
 func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
@@ -29,19 +27,14 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 
 	idStr := params[3]
 
-	if authTokenList == "" || useSyndication != "" {
-		atch, err := fetchFromSyndication(idStr)
-
-		if err == nil {
-			return atch, nil
-		}
-
-		if !errors.Is(err, errorNotFoundOrNSFW) {
-			return nil, err
-		}
+	atch, err := fetchFromAPI(idStr)
+	if err == nil {
+		return atch, nil
 	}
 
-	return fetchFromAPI(idStr)
+	fmt.Printf("fetchFromAPI failed: %v\n", err)
+
+	return fetchFromSyndication(idStr)
 }
 
 type urlShortenEntity struct {

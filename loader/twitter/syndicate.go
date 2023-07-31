@@ -20,7 +20,7 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 
 	switch resp.StatusCode {
 	case http.StatusNotFound:
-		return nil, errorNotFoundOrNSFW
+		return nil, errors.New("http:not found or NSFW tweet")
 	case http.StatusTooManyRequests:
 		return nil, errors.New("http:too many requests")
 	}

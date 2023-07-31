@@ -20,9 +20,13 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
    1. `links:read`は「App unfurl domains」した際に追加されるっぽい。
    2. Twitter Videoを展開する場合は`links.embed:write`も必要。忘れると展開時に`cannot_parse_attachment`と出る。
 5. 環境変数 `SLACK_BOT_TOKEN` と `SLACK_APP_TOKEN` によしなにトークンを設定する。
-6. Twitter APIで展開する場合は、ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`にカンマ区切りで設定する。
-   1. この値は1年間有効の模様。
-   2. 念のために日頃使ってるアカウントの値は使わないほうがいいでしょう。
+6. Twitter APIで展開する場合は以下の設定を追加
+   1. ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`にカンマ区切りで設定する。
+      1. この値は1年間有効の模様。
+      2. 念のために日頃使ってるアカウントの値は使わないほうがいいでしょう。
+   2. `auth_token`を送って呼ばれる`TweetResultByRestId`を呼び出すURIのうちID部分を`TWITTER_API_ID`に設定
+      1. `https://twitter.com/i/api/graphql/0hWvDhmW8YQ-S_ib3azIrw/TweetResultByRestId?variables(以下略)`でリクエストを送っている場合`0hWvDhmW8YQ-S_ib3azIrw`の部分
+      2. どうやら時々変わる様子。
    3. これを設定した状態で`USE_TWITTER_SYNDICATION`に何かしらの値を入れると、APIを叩く前に埋め込みTweet引用を試します。
 7. 起動
 

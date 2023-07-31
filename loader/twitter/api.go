@@ -86,9 +86,9 @@ func fetchFromAPI(idStr string) (*slack.Attachment, error) {
 func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	statusContainer := statusContainer{}
 
-	tr := io.TeeReader(responseBody, os.Stdout)
+	//tr := io.TeeReader(responseBody, os.Stdout)
 
-	if err := json.NewDecoder(tr).Decode(&statusContainer); err != nil {
+	if err := json.NewDecoder(responseBody).Decode(&statusContainer); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
 	result := statusContainer.Data.TweetResult.Result

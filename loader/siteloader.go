@@ -25,7 +25,7 @@ func GetUnfluredAttachment(domain, target string) (attachment *slack.Attachment,
 		return fetchAkizuki(uri)
 	}
 
-	if domain == "twitter.com" {
+	if strings.HasPrefix(target, "https://twitter.com/") {
 		return twitter.FetchTwitter(uri)
 	}
 

@@ -7,7 +7,7 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
 - [秋月電子](https://akizukidenshi.com/)
   - [goquery](https://github.com/PuerkitoBio/goquery)でスクレイピング
 - [Twitter](https://twitter.com/)
-  - 埋め込みTweetから引用を試み、出来なかったらAPIを叩きます。
+  - APIから取得を試み、失敗すると埋め込みTweetから引用を試みます。
 
 ## 起動方法
 
@@ -56,9 +56,7 @@ Twitterの展開は、埋め込みTweetを取得する方法とAPI経由する�
     - 現状は展開していません
 - cons
   - `auth_token`が必要
-  - 複数の動画が添付されたTweetに非対応で、最初の一つしか取れない。
-    - 動画と静止画を埋め込んだ場合も最初のメディアしか取れない。
-    - 静止画のみ複数埋め込んだ場合は取れる。
+  - rate limitがある
 
 ## 参考文献
 

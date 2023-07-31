@@ -166,7 +166,7 @@ func getMediaBlocks(media mediaEntity) slack.Block {
 		}
 	}
 
-	if media.Type == "video" && unfurlVideo != "" {
+	if (media.Type == "video" || media.Type == "animated_gif") && unfurlVideo != "" {
 		videoURL := ""
 		bitrate := 0
 		for _, v := range media.VideoInfo.Variants {
@@ -175,7 +175,7 @@ func getMediaBlocks(media mediaEntity) slack.Block {
 			}
 
 			// use best bitrate
-			if bitrate < v.Bitrate {
+			if bitrate <= v.Bitrate {
 				bitrate = v.Bitrate
 				videoURL = v.URL
 				//fmt.Printf("use:%d %s\n", bitrate, videoURL)

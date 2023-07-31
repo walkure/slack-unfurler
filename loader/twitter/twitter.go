@@ -51,8 +51,21 @@ type urlShortenEntity struct {
 	URL         string `json:"url"`
 }
 
-func extractShortenURL(text string, urls []urlShortenEntity) string {
+func filterShortenURLs(urls []urlShortenEntity) []urlShortenEntity {
+	var filtered []urlShortenEntity
+	urlMap := make(map[string]bool)
+	for _, it := range urls {
+		if _, exists := urlMap[it.URL]; !exists {
+			filtered = append(filtered, it)
+			urlMap[it.URL] = true
+		}
+	}
+	return filtered
+}
 
+func extractShortenURL(text string, targetUrls []urlShortenEntity) string {
+
+	urls := filterShortenURLs(targetUrls)
 	// replace from tail
 	sort.Slice(urls, func(i, j int) bool {
 		return urls[i].Indices[0] > urls[j].Indices[0]

@@ -99,45 +99,66 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
 	result := statusContainer.Data.TweetResult.Result
-	tweet := result.Legacy
+	legacyTweet := result.Legacy
+	noteTweet := result.NoteTweet.NoteTweetResults.Result
 	user := result.Core.UserResults.Result.Legacy
 
 	if result.RestID == "" {
-		tweet = result.Tweet.Legacy
+		legacyTweet = result.Tweet.Legacy
+		noteTweet = result.Tweet.NoteTweet.NoteTweetResults.Result
 		user = result.Tweet.Core.UserResults.Result.Legacy
+	}
+
+	var tweetText string
+	var entities []urlShortenEntity
+
+	if noteTweet.ID != "" {
+		tweetText = noteTweet.Text
+		entities = noteTweet.EntitySet.Urls
+	} else {
+		tweetText = legacyTweet.FullText
+		entities = append(legacyTweet.Entities.Media, legacyTweet.Entities.Urls...)
 	}
 
 	blocks := []slack.Block{
 		getUserBlock(user),
-		getTweetBlock(tweet.FullText, append(tweet.Entities.Media, tweet.Entities.Urls...)),
+		getTweetBlock(tweetText, entities),
 	}
 
-	for _, p := range tweet.ExtendedEntities.Media {
+	for _, p := range legacyTweet.ExtendedEntities.Media {
 		if block := getMediaBlocks(p); block != nil {
 			blocks = append(blocks, block)
 		}
 	}
 
-	blocks = append(blocks, getCreatedAtBlock(time.Time(tweet.CreatedAt)))
+	blocks = append(blocks, getCreatedAtBlock(time.Time(legacyTweet.CreatedAt)))
 
-	if tweet.QuotedStatusIDStr != "" {
+	if legacyTweet.QuotedStatusIDStr != "" {
 
 		qtresult := result.QuotedStatusResult.Result
-		qtstatus := qtresult.Legacy
+		qtLegacy := qtresult.Legacy
+		qtNote := qtresult.NoteTweet.NoteTweetResults.Result
 		qtuser := qtresult.Core.UserResults.Result.Legacy
 		if qtresult.RestID == "" {
-			qtstatus = qtresult.Tweet.Legacy
+			qtLegacy = qtresult.Tweet.Legacy
 			qtuser = qtresult.Tweet.Core.UserResults.Result.Legacy
+			qtNote = qtresult.Tweet.NoteTweet.NoteTweetResults.Result
+		}
+
+		if qtNote.ID != "" {
+			tweetText = qtNote.Text
+			entities = qtNote.EntitySet.Urls
+		} else {
+			tweetText = qtLegacy.FullText
+			entities = append(qtLegacy.Entities.Media, qtLegacy.Entities.Urls...)
 		}
 
 		blocks = append(blocks,
 			getUserBlock(qtuser),
-			getTweetBlock(qtstatus.FullText,
-				append(qtstatus.Entities.Media,
-					qtstatus.Entities.Urls...)),
+			getTweetBlock(tweetText, entities),
 		)
 
-		for _, p := range qtstatus.ExtendedEntities.Media {
+		for _, p := range qtLegacy.ExtendedEntities.Media {
 			blocks = append(blocks, &slack.ImageBlock{
 				Type:     slack.MBTImage,
 				ImageURL: p.MediaURLHTTPS,
@@ -145,7 +166,7 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 			})
 		}
 
-		blocks = append(blocks, getCreatedAtBlock(time.Time(qtstatus.CreatedAt)))
+		blocks = append(blocks, getCreatedAtBlock(time.Time(qtLegacy.CreatedAt)))
 	}
 
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil
@@ -204,10 +225,24 @@ type statusResultEntity struct {
 	Tweet statusResultCommonEntity `json:"tweet"`
 }
 
+type noteTweetEntity struct {
+	IsExpandable     bool `json:"is_expandable"`
+	NoteTweetResults struct {
+		Result struct {
+			ID        string `json:"id"`
+			Text      string `json:"text"`
+			EntitySet struct {
+				Urls []urlShortenEntity `json:"urls"`
+			} `json:"entity_set"`
+		} `json:"result"`
+	} `json:"note_tweet_results"`
+}
+
 type statusResultCommonEntity struct {
-	RestID string             `json:"rest_id"`
-	Legacy statusLegacyEntity `json:"legacy"`
-	Core   struct {
+	RestID    string             `json:"rest_id"`
+	Legacy    statusLegacyEntity `json:"legacy"`
+	NoteTweet noteTweetEntity    `json:"note_tweet"`
+	Core      struct {
 		UserResults struct {
 			Result struct {
 				Typename       string     `json:"__typename"`

@@ -65,12 +65,19 @@ func fetchFromAPI(idStr string) (*slack.Attachment, error) {
 			return nil, fmt.Errorf("http/api transport error: %w", err)
 		}
 
+		if res.StatusCode == http.StatusOK {
+			defer func() {
+				io.Copy(io.Discard, res.Body)
+				res.Body.Close()
+			}()
+			return extractStatus(res.Body)
+		}
+
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
 		fmt.Printf("HTTP status:%d Token:%s\n", res.StatusCode, authToken)
 
 		switch res.StatusCode {
-		case http.StatusOK:
-			defer res.Body.Close()
-			return extractStatus(res.Body)
 		case http.StatusUnauthorized:
 		case http.StatusTooManyRequests:
 			continue

@@ -33,5 +33,13 @@ func handleLinkSharedEvent(ctx context.Context, api *slack.Client, ev *slackeven
 	}
 	_, _, err := postMessageWithRetry(ctx, api, ev.Channel, slack.MsgOptionUnfurl(ev.MessageTimeStamp, data))
 
+	if err != nil {
+		urls := make([]string, 0, len(data))
+		for _, k := range ev.Links {
+			urls = append(urls, k.URL)
+		}
+		fmt.Printf("unfurl failure[%s]: %v\n", urls, err)
+	}
+
 	return err
 }

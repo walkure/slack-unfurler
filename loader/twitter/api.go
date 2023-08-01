@@ -188,6 +188,12 @@ type statusLegacyEntity struct {
 type statusResultEntity struct {
 	Typename string `json:"__typename"`
 	statusResultCommonEntity
+	QuotedRefResult struct {
+		Result struct {
+			Typename string `json:"__typename"`
+			RestID   string `json:"rest_id"`
+		} `json:"result"`
+	} `json:"quotedRefResult"`
 	Tweet statusResultCommonEntity `json:"tweet"`
 }
 

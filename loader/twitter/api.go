@@ -118,6 +118,10 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 		qtresult := result.QuotedStatusResult.Result
 		qtstatus := qtresult.Legacy
 		qtuser := qtresult.Core.UserResults.Result.Legacy
+		if qtresult.RestID == "" {
+			qtstatus = qtresult.Tweet.Legacy
+			qtuser = qtresult.Tweet.Core.UserResults.Result.Legacy
+		}
 
 		blocks = append(blocks,
 			getUserBlock(qtuser),

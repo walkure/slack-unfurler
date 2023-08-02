@@ -154,6 +154,9 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 		}
 
 		blocks = append(blocks,
+			&slack.DividerBlock{
+				Type: slack.MBTDivider,
+			},
 			getUserBlock(qtuser),
 			getTweetBlock(tweetText, entities),
 		)

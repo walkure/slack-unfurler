@@ -162,11 +162,9 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 		)
 
 		for _, p := range qtLegacy.ExtendedEntities.Media {
-			blocks = append(blocks, &slack.ImageBlock{
-				Type:     slack.MBTImage,
-				ImageURL: p.MediaURLHTTPS,
-				AltText:  p.DisplayURL,
-			})
+			if block := getMediaBlocks(p); block != nil {
+				blocks = append(blocks, block)
+			}
 		}
 
 		blocks = append(blocks, getCreatedAtBlock(time.Time(qtLegacy.CreatedAt)))

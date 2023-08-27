@@ -30,7 +30,7 @@ func extractProfile(responseBody io.Reader) (*slack.Attachment, error) {
 	if err := json.NewDecoder(responseBody).Decode(&userContainer); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
-	fmt.Println("")
+	//fmt.Println("")
 
 	userLegacy := userContainer.Data.User.Result.Legacy
 

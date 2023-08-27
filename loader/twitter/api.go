@@ -106,7 +106,7 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	if err := json.NewDecoder(responseBody).Decode(&statusContainer); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
-	fmt.Println("")
+	// fmt.Println("")
 
 	result := statusContainer.Data.TweetResult.Result
 	legacyTweet := result.Legacy

@@ -37,7 +37,11 @@ func extractProfile(responseBody io.Reader) (*slack.Attachment, error) {
 	blocks := []slack.Block{
 		getProfileSummaryBlock(userLegacy),
 		getProfileDescriptionBlock(userLegacy),
-		getProfileParamsBlock(userLegacy),
+	}
+
+	profileParamsBlock := getProfileParamsBlock(userLegacy)
+	if profileParamsBlock != nil {
+		blocks = append(blocks, profileParamsBlock)
 	}
 
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil
@@ -112,6 +116,10 @@ func getProfileParamsBlock(userLegacy userLegacyEntity) *slack.ContextBlock {
 			Type: "plain_text",
 			Text: location,
 		})
+	}
+
+	if len(elms) == 0 {
+		return nil
 	}
 
 	return &slack.ContextBlock{

@@ -21,12 +21,20 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 	}
 
 	params := strings.Split(path, "/")
-	if len(params) < 3 {
-		return nil, errors.New("not tweet uri")
+
+	if len(params) >= 4 && params[3] != "" {
+		return fetchTweet(params[3])
 	}
 
-	idStr := params[3]
+	if len(params) >= 2 && params[1] != "" {
+		return fetchTwitterProfile(params[1])
+	}
 
+	return nil, errors.New("not tweet uri")
+
+}
+
+func fetchTweet(idStr string) (*slack.Attachment, error) {
 	atch, err := fetchFromAPI(idStr)
 	if err == nil {
 		return atch, nil

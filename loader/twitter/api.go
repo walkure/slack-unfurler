@@ -23,10 +23,20 @@ const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 const csrfToken = "12345678901234567890123456789012"
 
 var authTokenList = os.Getenv("TWITTER_AUTH_TOKENS_FROM_BROWSER")
-var apiID = os.Getenv("TWITTER_API_ID")
+var guestApiID = os.Getenv("TWITTER_GUEST_API_ID")
+var loginApiID = os.Getenv("TWITTER_LOGIN_API_ID")
 
 func fetchFromAPI(idStr string) (*slack.Attachment, error) {
+	return fetchAPI("TweetResultByRestId", guestApiID, func(graphQuery url.Values) {
+		graphQuery.Set("variables", fmt.Sprintf(`{"tweetId":"%s","withCommunity":false,"includePromotedContent":false,"withVoice":false}`, idStr))
+		graphQuery.Set("features", `{"creator_subscriptions_tweet_preview_api_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"responsive_web_media_download_video_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_enhance_cards_enabled":false}`)
+		graphQuery.Set("fieldToggles", `{"withArticleRichContentState":false,"withAuxiliaryUserLabels":false}`)
+	}, func(responseBody io.Reader) (*slack.Attachment, error) {
+		return extractStatus(responseBody)
+	})
+}
 
+func fetchAPI(apiName string, apiID string, queryFactory func(graphQuery url.Values), responseProcessor func(responseBody io.Reader) (*slack.Attachment, error)) (*slack.Attachment, error) {
 	if authTokenList == "" {
 		return nil, errors.New("cannot get auth_token. disable apicall")
 	}
@@ -38,15 +48,13 @@ func fetchFromAPI(idStr string) (*slack.Attachment, error) {
 	authTokens := strings.Split(authTokenList, ",")
 	rand.Shuffle(len(authTokens), func(i, j int) { authTokens[i], authTokens[j] = authTokens[j], authTokens[i] })
 
-	endpoint, err := url.Parse(fmt.Sprintf("https://twitter.com/i/api/graphql/%s/TweetResultByRestId", apiID))
+	endpoint, err := url.Parse(fmt.Sprintf("https://twitter.com/i/api/graphql/%s/%s", apiID, apiName))
 	if err != nil {
 		return nil, fmt.Errorf("url parse error: %w", err)
 	}
 
 	q := endpoint.Query()
-	q.Set("variables", fmt.Sprintf(`{"tweetId":"%s","withCommunity":false,"includePromotedContent":false,"withVoice":false}`, idStr))
-	q.Set("features", `{"creator_subscriptions_tweet_preview_api_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"responsive_web_media_download_video_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_enhance_cards_enabled":false}`)
-	q.Set("fieldToggles", `{"withArticleRichContentState":false,"withAuxiliaryUserLabels":false}`)
+	queryFactory(q)
 	endpoint.RawQuery = q.Encode()
 
 	for _, authToken := range authTokens {
@@ -70,7 +78,7 @@ func fetchFromAPI(idStr string) (*slack.Attachment, error) {
 				io.Copy(io.Discard, res.Body)
 				res.Body.Close()
 			}()
-			return extractStatus(res.Body)
+			return responseProcessor(res.Body)
 		}
 
 		io.Copy(io.Discard, res.Body)
@@ -98,6 +106,8 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	if err := json.NewDecoder(responseBody).Decode(&statusContainer); err != nil {
 		return nil, fmt.Errorf("json decode: %w", err)
 	}
+	fmt.Println("")
+
 	result := statusContainer.Data.TweetResult.Result
 	legacyTweet := result.Legacy
 	noteTweet := result.NoteTweet.NoteTweetResults.Result

@@ -42,7 +42,7 @@ func doGetUnfluredAttachment(ctx context.Context, domain, target string) (attach
 		return fetchAkizuki(uri)
 	}
 
-	if strings.HasPrefix(target, "https://twitter.com/") {
+	if domain == "twitter.com" || domain == "x.com" {
 		return twitter.FetchTwitter(uri)
 	}
 

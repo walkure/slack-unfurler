@@ -112,11 +112,16 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	legacyTweet := result.Legacy
 	noteTweet := result.NoteTweet.NoteTweetResults.Result
 	user := result.Core.UserResults.Result.Legacy
+	qtResult := result.QuotedStatusResult.Result
 
 	if result.RestID == "" {
 		legacyTweet = result.Tweet.Legacy
 		noteTweet = result.Tweet.NoteTweet.NoteTweetResults.Result
 		user = result.Tweet.Core.UserResults.Result.Legacy
+		if result.Tweet.QuotedStatusResult.Result == nil {
+			return nil, errors.New("no quoted status in tweet struct")
+		}
+		qtResult = *result.Tweet.QuotedStatusResult.Result
 	}
 
 	var tweetText string
@@ -144,7 +149,6 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	blocks = append(blocks, getCreatedAtBlock(time.Time(legacyTweet.CreatedAt)))
 
 	if legacyTweet.QuotedStatusIDStr != "" {
-		qtResult := result.QuotedStatusResult.Result
 		qtLegacy := qtResult.Legacy
 		qtNote := qtResult.NoteTweet.NoteTweetResults.Result
 		qtuser := qtResult.Core.UserResults.Result.Legacy
@@ -263,6 +267,9 @@ type statusResultCommonEntity struct {
 			} `json:"result"`
 		} `json:"user_results"`
 	} `json:"core"`
+	QuotedStatusResult struct {
+		Result *statusResultEntity `json:"result"`
+	} `json:"quoted_status_result"`
 }
 
 type statusResultWrapper struct {

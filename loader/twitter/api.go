@@ -144,15 +144,14 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 	blocks = append(blocks, getCreatedAtBlock(time.Time(legacyTweet.CreatedAt)))
 
 	if legacyTweet.QuotedStatusIDStr != "" {
-
-		qtresult := result.QuotedStatusResult.Result
-		qtLegacy := qtresult.Legacy
-		qtNote := qtresult.NoteTweet.NoteTweetResults.Result
-		qtuser := qtresult.Core.UserResults.Result.Legacy
-		if qtresult.RestID == "" {
-			qtLegacy = qtresult.Tweet.Legacy
-			qtuser = qtresult.Tweet.Core.UserResults.Result.Legacy
-			qtNote = qtresult.Tweet.NoteTweet.NoteTweetResults.Result
+		qtResult := result.QuotedStatusResult.Result
+		qtLegacy := qtResult.Legacy
+		qtNote := qtResult.NoteTweet.NoteTweetResults.Result
+		qtuser := qtResult.Core.UserResults.Result.Legacy
+		if qtResult.RestID == "" {
+			qtLegacy = qtResult.Tweet.Legacy
+			qtuser = qtResult.Tweet.Core.UserResults.Result.Legacy
+			qtNote = qtResult.Tweet.NoteTweet.NoteTweetResults.Result
 		}
 
 		if qtNote.ID != "" {

@@ -118,10 +118,9 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 		legacyTweet = result.Tweet.Legacy
 		noteTweet = result.Tweet.NoteTweet.NoteTweetResults.Result
 		user = result.Tweet.Core.UserResults.Result.Legacy
-		if result.Tweet.QuotedStatusResult.Result == nil {
-			return nil, errors.New("no quoted status in tweet struct")
+		if result.Tweet.QuotedStatusResult.Result != nil {
+			qtResult = *result.Tweet.QuotedStatusResult.Result
 		}
-		qtResult = *result.Tweet.QuotedStatusResult.Result
 	}
 
 	var tweetText string

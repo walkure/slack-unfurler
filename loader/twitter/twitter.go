@@ -194,7 +194,7 @@ func getMediaBlocks(media mediaEntity) slack.Block {
 			VideoURL:     videoURL,
 			ThumbnailURL: media.MediaURLHTTPS,
 			AltText:      media.DisplayURL,
-			TitleURL:     media.ExpandedURL,
+			TitleURL:     videoURL,
 			Title: &slack.TextBlockObject{
 				Type: "plain_text",
 				Text: media.DisplayURL,

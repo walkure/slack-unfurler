@@ -45,6 +45,14 @@ func fetchTweet(idStr string) (*slack.Attachment, error) {
 	return fetchFromSyndication(idStr)
 }
 
+type externalLinkEntities struct {
+	Urls []urlShortenEntity `json:"urls"`
+	// Media is exists in legacy tweet only
+	Media        []urlShortenEntity  `json:"media"`
+	UserMentions []userMentionEntity `json:"user_mentions"`
+	Hashtags     []hashtagEntity     `json:"hashtags"`
+}
+
 type urlShortenEntity struct {
 	DisplayURL  string `json:"display_url"`
 	ExpandedURL string `json:"expanded_url"`
@@ -52,21 +60,54 @@ type urlShortenEntity struct {
 	URL         string `json:"url"`
 }
 
-func filterShortenURLs(urls []urlShortenEntity) []urlShortenEntity {
-	var filtered []urlShortenEntity
-	urlMap := make(map[string]bool)
-	for _, it := range urls {
-		if _, exists := urlMap[it.URL]; !exists {
-			filtered = append(filtered, it)
-			urlMap[it.URL] = true
-		}
-	}
-	return filtered
+type userMentionEntity struct {
+	IDStr      string `json:"id_str"`
+	Name       string `json:"name"`
+	ScreenName string `json:"screen_name"`
+	Indices    []int  `json:"indices"`
 }
 
-func extractShortenURL(text string, targetUrls []urlShortenEntity) string {
+type hashtagEntity struct {
+	Indices []int  `json:"indices"`
+	Text    string `json:"text"`
+}
 
-	urls := filterShortenURLs(targetUrls)
+func (e externalLinkEntities) getShortenURLs(replyMsgID, replyUID string) []urlShortenEntity {
+	ret := make([]urlShortenEntity, 0, len(e.Urls)+len(e.Media)+len(e.UserMentions)+len(e.Hashtags))
+
+	ret = append(ret, e.Urls...)
+	ret = append(ret, e.Media...)
+	ret = append(ret, convertToShortenURLs(e.UserMentions, e.Hashtags, replyMsgID, replyUID)...)
+
+	return ret
+}
+
+func convertToShortenURLs(userMentions []userMentionEntity, hashtags []hashtagEntity, replyMsgID, replyUID string) []urlShortenEntity {
+	shortenURLs := make([]urlShortenEntity, 0, len(userMentions)+len(hashtags))
+	for _, it := range userMentions {
+		target := "https://twitter.com/" + it.ScreenName
+		if it.IDStr == replyUID && replyMsgID != "" {
+			target += "/status/" + replyMsgID
+		}
+
+		shortenURLs = append(shortenURLs, urlShortenEntity{
+			DisplayURL:  "@" + it.ScreenName,
+			ExpandedURL: target,
+			Indices:     it.Indices,
+		})
+	}
+	for _, it := range hashtags {
+		shortenURLs = append(shortenURLs, urlShortenEntity{
+			DisplayURL:  "#" + it.Text,
+			ExpandedURL: "https://twitter.com/hashtag/" + it.Text,
+			Indices:     it.Indices,
+		})
+	}
+	return shortenURLs
+}
+
+func extractShortenURL(text string, urls []urlShortenEntity) string {
+
 	// replace from tail
 	sort.Slice(urls, func(i, j int) bool {
 		return urls[i].Indices[0] > urls[j].Indices[0]
@@ -75,8 +116,13 @@ func extractShortenURL(text string, targetUrls []urlShortenEntity) string {
 	// indices are unit by rune.
 	proceed := []rune(text)
 
+	proceededIndex := -1
 	for _, it := range urls {
 
+		// in Media entity, same indices are exists(multiple image in a URL).
+		if it.Indices[0] == proceededIndex {
+			continue
+		}
 		swapped := append([]rune{}, proceed[:it.Indices[0]]...)
 
 		link := fmt.Sprintf("<%s|%s>", it.ExpandedURL, it.DisplayURL)
@@ -85,6 +131,7 @@ func extractShortenURL(text string, targetUrls []urlShortenEntity) string {
 		swapped = append(swapped, proceed[it.Indices[1]:]...)
 
 		proceed = swapped
+		proceededIndex = it.Indices[0]
 	}
 
 	return string(proceed)

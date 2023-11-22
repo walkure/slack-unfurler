@@ -128,23 +128,22 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 
 	if noteTweet.ID != "" {
 		tweetText = noteTweet.Text
-		entities = noteTweet.EntitySet.Urls
+		// note tweet has no explicit screen_name in conversation
+		entities = noteTweet.EntitySet.getShortenURLs("", "")
 	} else {
 		tweetText = legacyTweet.FullText
-		entities = append(legacyTweet.Entities.Media, legacyTweet.Entities.Urls...)
+		entities = legacyTweet.Entities.getShortenURLs(legacyTweet.ConversationIDStr, legacyTweet.InReplyToUserIDStr)
 	}
 
 	blocks := []slack.Block{
 		getUserBlock(user),
 		getTweetBlock(tweetText, entities),
 	}
-
 	for _, p := range legacyTweet.ExtendedEntities.Media {
 		if block := getMediaBlocks(p); block != nil {
 			blocks = append(blocks, block)
 		}
 	}
-
 	blocks = append(blocks, getCreatedAtBlock(time.Time(legacyTweet.CreatedAt)))
 
 	if legacyTweet.QuotedStatusIDStr != "" {
@@ -159,10 +158,10 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 
 		if qtNote.ID != "" {
 			tweetText = qtNote.Text
-			entities = qtNote.EntitySet.Urls
+			entities = qtNote.EntitySet.getShortenURLs("", "")
 		} else {
 			tweetText = qtLegacy.FullText
-			entities = append(qtLegacy.Entities.Media, qtLegacy.Entities.Urls...)
+			entities = qtLegacy.Entities.getShortenURLs(qtLegacy.ConversationIDStr, qtLegacy.InReplyToUserIDStr)
 		}
 
 		blocks = append(blocks,
@@ -200,14 +199,11 @@ func (rdt *rubyDateTime) UnmarshalJSON(data []byte) error {
 }
 
 type statusLegacyEntity struct {
-	CreatedAt rubyDateTime `json:"created_at"`
-	ID        int64        `json:"id"`
-	IDStr     string       `json:"id_str"`
-	FullText  string       `json:"full_text"`
-	Entities  struct {
-		Urls  []urlShortenEntity `json:"urls"`
-		Media []urlShortenEntity `json:"media"`
-	} `json:"entities"`
+	CreatedAt        rubyDateTime         `json:"created_at"`
+	ID               int64                `json:"id"`
+	IDStr            string               `json:"id_str"`
+	FullText         string               `json:"full_text"`
+	Entities         externalLinkEntities `json:"entities"`
 	ExtendedEntities struct {
 		Media []mediaEntity `json:"media"`
 	} `json:"extended_entities"`
@@ -218,6 +214,8 @@ type statusLegacyEntity struct {
 	RetweetCount          int    `json:"retweet_count"`
 	FavoriteCount         int    `json:"favorite_count"`
 	ReplyCount            int    `json:"reply_count"`
+	ConversationIDStr     string `json:"conversation_id_str"`
+	InReplyToUserIDStr    string `json:"in_reply_to_user_id_str"`
 	QuotedStatusIDStr     string `json:"quoted_status_id_str"`
 	QuotedStatusPermalink struct {
 		URL      string `json:"url"`
@@ -242,11 +240,9 @@ type noteTweetEntity struct {
 	IsExpandable     bool `json:"is_expandable"`
 	NoteTweetResults struct {
 		Result struct {
-			ID        string `json:"id"`
-			Text      string `json:"text"`
-			EntitySet struct {
-				Urls []urlShortenEntity `json:"urls"`
-			} `json:"entity_set"`
+			ID        string               `json:"id"`
+			Text      string               `json:"text"`
+			EntitySet externalLinkEntities `json:"entity_set"`
 		} `json:"result"`
 	} `json:"note_tweet_results"`
 }

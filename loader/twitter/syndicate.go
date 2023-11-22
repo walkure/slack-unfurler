@@ -11,7 +11,7 @@ import (
 )
 
 func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
-	target := fmt.Sprintf("https://cdn.syndication.twimg.com/tweet-result?id=%s&lang=ja", idStr)
+	target := fmt.Sprintf("https://cdn.syndication.twimg.com/tweet-result?id=%s&token=x", idStr)
 
 	resp, err := http.Get(target)
 	if err != nil {
@@ -33,7 +33,7 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 
 	blocks := []slack.Block{
 		getUserBlock(tweet.User),
-		getTweetBlock(tweet.Text, append(tweet.Entities.Media, tweet.Entities.Urls...)),
+		getTweetBlock(tweet.Text, tweet.Entities.getShortenURLs(tweet.InReplyToStatusIDStr, tweet.InReplyToUserIDStr)),
 	}
 
 	for _, p := range tweet.MediaDetails {
@@ -45,14 +45,14 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 	blocks = append(blocks, getCreatedAtBlock(tweet.CreatedAt))
 
 	if tweet.QuotedTweet.IDStr != "" {
+		qTweet := tweet.QuotedTweet
 		blocks = append(blocks,
-			getUserBlock(tweet.QuotedTweet.User),
-			getTweetBlock(tweet.QuotedTweet.Text,
-				append(tweet.QuotedTweet.Entities.Media,
-					tweet.QuotedTweet.Entities.Urls...)),
+			getUserBlock(qTweet.User),
+			getTweetBlock(qTweet.Text,
+				qTweet.Entities.getShortenURLs(qTweet.InReplyToStatusIDStr, qTweet.InReplyToUserIDStr)),
 		)
 
-		for _, p := range tweet.QuotedTweet.Photos {
+		for _, p := range qTweet.Photos {
 			blocks = append(blocks, &slack.ImageBlock{
 				Type:     slack.MBTImage,
 				ImageURL: p.URL,
@@ -60,31 +60,30 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 			})
 		}
 
-		blocks = append(blocks, getCreatedAtBlock(tweet.QuotedTweet.CreatedAt))
+		blocks = append(blocks, getCreatedAtBlock(qTweet.CreatedAt))
 	}
 
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil
 }
 
 type tweetInternalEntity struct {
-	CreatedAt time.Time `json:"created_at"`
-	Entities  struct {
-		Urls  []urlShortenEntity `json:"urls"`
-		Media []urlShortenEntity `json:"media"`
-	} `json:"entities"`
-	IDStr        string        `json:"id_str"`
-	Text         string        `json:"text"`
-	User         userEntity    `json:"user"`
-	MediaDetails []mediaEntity `json:"mediaDetails"`
+	CreatedAt    time.Time            `json:"created_at"`
+	Entities     externalLinkEntities `json:"entities"`
+	IDStr        string               `json:"id_str"`
+	Text         string               `json:"text"`
+	User         userEntity           `json:"user"`
+	MediaDetails []mediaEntity        `json:"mediaDetails"`
 	Photos       []struct {
 		ExpandedURL string `json:"expandedUrl"`
 		URL         string `json:"url"`
 		Width       int    `json:"width"`
 		Height      int    `json:"height"`
 	} `json:"photos"`
-	IsEdited      bool `json:"isEdited"`
-	IsStaleEdit   bool `json:"isStaleEdit"`
-	FavoriteCount int  `json:"favorite_count"`
+	InReplyToStatusIDStr string `json:"in_reply_to_status_id_str"`
+	InReplyToUserIDStr   string `json:"in_reply_to_user_id_str"`
+	IsEdited             bool   `json:"isEdited"`
+	IsStaleEdit          bool   `json:"isStaleEdit"`
+	FavoriteCount        int    `json:"favorite_count"`
 }
 type tweetEntity struct {
 	tweetInternalEntity

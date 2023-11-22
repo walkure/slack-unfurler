@@ -95,8 +95,9 @@ func getTweetBlock(tweet string, shortenEntities []urlShortenEntity) *slack.Sect
 	return &slack.SectionBlock{
 		Type: slack.MBTSection,
 		Text: &slack.TextBlockObject{
-			Type: "mrkdwn",
-			Text: txt,
+			Type:     "mrkdwn",
+			Text:     txt,
+			Verbatim: true,
 		},
 	}
 }
@@ -124,6 +125,7 @@ func getUserBlock(user userEntity) *slack.ContextBlock {
 						user.ScreenName, user.Name,
 						user.ScreenName, user.ScreenName,
 					),
+					Verbatim: true,
 				},
 			},
 		},

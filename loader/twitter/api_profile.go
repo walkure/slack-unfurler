@@ -70,6 +70,7 @@ func getProfileSummaryBlock(userLegacy userLegacyEntity) *slack.ContextBlock {
 						userLegacy.ScreenName, userLegacy.ScreenName,
 						protected,
 					),
+					Verbatim: true,
 				},
 			},
 		},
@@ -84,8 +85,9 @@ func getProfileDescriptionBlock(userLegacy userLegacyEntity) *slack.SectionBlock
 	return &slack.SectionBlock{
 		Type: slack.MBTSection,
 		Text: &slack.TextBlockObject{
-			Type: "mrkdwn",
-			Text: txt,
+			Type:     "mrkdwn",
+			Text:     txt,
+			Verbatim: true,
 		},
 		Accessory: &slack.Accessory{
 			ImageElement: &slack.ImageBlockElement{
@@ -105,8 +107,9 @@ func getProfileParamsBlock(userLegacy userLegacyEntity) *slack.ContextBlock {
 	if url != "" {
 		url = "🔗 " + url
 		elms = append(elms, slack.TextBlockObject{
-			Type: "mrkdwn",
-			Text: url,
+			Type:     "mrkdwn",
+			Text:     url,
+			Verbatim: true,
 		})
 	}
 	location := userLegacy.Location

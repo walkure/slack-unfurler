@@ -156,29 +156,43 @@ func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
 			qtNote = qtResult.Tweet.NoteTweet.NoteTweetResults.Result
 		}
 
-		if qtNote.ID != "" {
-			tweetText = qtNote.Text
-			entities = qtNote.EntitySet.getShortenURLs("", "")
+		if qtLegacy.IDStr == "" && qtNote.ID == "" {
+
+			blocks = append(blocks, &slack.DividerBlock{Type: slack.MBTDivider},
+				&slack.SectionBlock{
+					Type: slack.MBTSection,
+					Text: &slack.TextBlockObject{
+						Type: "mrkdwn",
+						Text: fmt.Sprintf("<%s|%s> (deleted)", legacyTweet.QuotedStatusPermalink.Expanded,
+							legacyTweet.QuotedStatusPermalink.Display),
+						Verbatim: true,
+					},
+				})
+
 		} else {
-			tweetText = qtLegacy.FullText
-			entities = qtLegacy.Entities.getShortenURLs(qtLegacy.ConversationIDStr, qtLegacy.InReplyToUserIDStr)
-		}
-
-		blocks = append(blocks,
-			&slack.DividerBlock{
-				Type: slack.MBTDivider,
-			},
-			getUserBlock(qtuser),
-			getTweetBlock(tweetText, entities),
-		)
-
-		for _, p := range qtLegacy.ExtendedEntities.Media {
-			if block := getMediaBlocks(p); block != nil {
-				blocks = append(blocks, block)
+			if qtNote.ID != "" {
+				tweetText = qtNote.Text
+				entities = qtNote.EntitySet.getShortenURLs("", "")
+			} else {
+				tweetText = qtLegacy.FullText
+				entities = qtLegacy.Entities.getShortenURLs(qtLegacy.ConversationIDStr, qtLegacy.InReplyToUserIDStr)
 			}
-		}
 
-		blocks = append(blocks, getCreatedAtBlock(time.Time(qtLegacy.CreatedAt)))
+			blocks = append(blocks,
+				&slack.DividerBlock{
+					Type: slack.MBTDivider,
+				},
+				getUserBlock(qtuser),
+				getTweetBlock(tweetText, entities),
+			)
+
+			for _, p := range qtLegacy.ExtendedEntities.Media {
+				if block := getMediaBlocks(p); block != nil {
+					blocks = append(blocks, block)
+				}
+			}
+			blocks = append(blocks, getCreatedAtBlock(time.Time(qtLegacy.CreatedAt)))
+		}
 	}
 
 	return &slack.Attachment{Blocks: slack.Blocks{BlockSet: blocks}}, nil

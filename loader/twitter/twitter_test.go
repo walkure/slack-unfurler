@@ -58,3 +58,44 @@ func Test_extractShortenURL(t *testing.T) {
 		})
 	}
 }
+
+func Test_sanitizeIdStr(t *testing.T) {
+	tests := []struct {
+		name  string
+		idStr string
+		want  string
+	}{
+		{
+			name:  "clean idstr",
+			idStr: "12345678901234567890",
+			want:  "12345678901234567890",
+		},
+		{
+			name:  "dirty idstr(trailing ASCII)",
+			idStr: "12345678901234567890abc",
+			want:  "12345678901234567890",
+		},
+		{
+			name:  "dirty idstr(trailing utf8)",
+			idStr: "12345678901234567890鶴亀",
+			want:  "12345678901234567890",
+		},
+		{
+			name:  "dirty idstr(contains ASCII)",
+			idStr: "1234567890abc1234567890abc",
+			want:  "1234567890",
+		},
+		{
+			name:  "dirty idstr(contains utf8)",
+			idStr: "12345678901234鶴亀567890",
+			want:  "12345678901234",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitizeIdStr(tt.idStr); got != tt.want {
+				t.Errorf("sanitizeIdStr() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -23,7 +23,8 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 	params := strings.Split(path, "/")
 
 	if len(params) >= 4 && params[3] != "" {
-		return fetchTweet(params[3])
+		idStr := sanitizeIdStr(params[3])
+		return fetchTweet(idStr)
 	}
 
 	if len(params) >= 2 && params[1] != "" {
@@ -43,6 +44,21 @@ func fetchTweet(idStr string) (*slack.Attachment, error) {
 	fmt.Printf("fetchFromAPI failed: %v\n", err)
 
 	return fetchFromSyndication(idStr)
+}
+
+func sanitizeIdStr(idStr string) string {
+	// remove non-numeric characters and after
+	b := make([]byte, len(idStr))
+	j := 0
+	for i, c := range idStr {
+		if c >= '0' && c <= '9' {
+			b[i] = byte(c)
+			j++
+		} else {
+			break
+		}
+	}
+	return string(b[:j])
 }
 
 type externalLinkEntities struct {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/slack-go/slack"
 )
 
@@ -17,37 +16,30 @@ func fetchAkizuki(uri *url.URL) (attachment *slack.Attachment, err error) {
 	}
 
 	// get Title
-	title := doc.Find("#maincontents > div:nth-child(6)").Contents().Get(0).Data
-	//title := doc.Find("#maincontents > table > tbody > tr:nth-child(1) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(1) > td > h6").Text()
+	title := doc.Find("body > div.wrapper > div.pane-contents > div > main > div > div.pane-goods-header > div.block-goods-name > h1").Text()
 	if title == "" {
-		return nil, errors.New("akizuki:cannot get image uri")
+		return nil, errors.New("akizuki:cannot get title")
 	}
 
-	// get Image URL
-	href, ok := doc.Find("#imglink > img").Attr("src")
+	// get Image URL (lazy loaded)
+	href, ok := doc.Find("#gallery > div.block-src-l > a > figure > img").Attr("data-src")
 	if !ok {
 		return nil, errors.New("akizuki:cannot get image uri")
 	}
 	imageUrl, err := resolveRelativeURI(uri, href)
+
 	if err != nil {
 		return nil, fmt.Errorf("akizuki:image_url err:%w", err)
 	}
 
 	// get description.
-	desc := ""
-	doc.Find("#maincontents > table > tbody > tr:nth-child(1) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(3) > td").Contents().EachWithBreak(func(i int, s *goquery.Selection) bool {
-		if !s.Is("br") {
-			desc = s.Text()
-			return false
-		}
-		return true
-	})
+	desc := doc.Find("body > div.wrapper > div.pane-contents > div > main > div > div.pane-goods-center > div.block-goods-overview").Text()
 	if desc == "" {
 		return nil, errors.New("akizuki:cannot get description")
 	}
 
-	// get price
-	price := trimDescription(doc.Find("#maincontents > div:nth-child(6) > table > tbody > tr > td:nth-child(1)").Text())
+	// get price (include tax)
+	price := trimDescription(doc.Find("#SalesArea > div > div:nth-child(1) > div.block-goods-price--price.price.js-enhanced-ecommerce-goods-price").Text())
 	if price == "" {
 		return nil, errors.New("akizuki:cannot get price")
 	}

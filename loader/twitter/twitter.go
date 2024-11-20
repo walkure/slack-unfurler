@@ -20,6 +20,10 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 		return nil, errors.New("does not contains path")
 	}
 
+	if strings.HasPrefix(path, "/i/grok/share/") {
+		return fetchGrokStatus(strings.TrimPrefix(path, "/i/grok/share/"))
+	}
+
 	params := strings.Split(path, "/")
 
 	if len(params) >= 4 && params[3] != "" {

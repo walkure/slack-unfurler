@@ -1,17 +1,19 @@
 module github.com/walkure/slack-unfurler
 
-go 1.20
+go 1.23
+
+toolchain go1.23.3
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/hashicorp/golang-lru/v2 v2.0.4
-	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
-	github.com/slack-go/slack v0.12.4-0.20231021154946-e7152216dda5
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
+	github.com/PuerkitoBio/goquery v1.10.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
+	github.com/slack-go/slack v0.15.0
+	golang.org/x/net v0.31.0
 )
 
 require (
-	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
-	golang.org/x/text v0.3.6 // indirect
+	github.com/andybalholm/cascadia v1.3.2 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
+	golang.org/x/text v0.20.0 // indirect
 )

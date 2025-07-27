@@ -1,9 +1,7 @@
 package twitter
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"strings"
 
@@ -11,26 +9,22 @@ import (
 )
 
 func fetchTwitterProfile(screenName string) (*slack.Attachment, error) {
-	return fetchAPI("UserByScreenName", loginApiID, func(graphQuery url.Values) {
+
+	userContainer := userContainer{}
+
+	if err := invokeGraphQL("UserByScreenName", loginApiID, func(graphQuery url.Values) {
 		graphQuery.Set("variables", fmt.Sprintf(`{"screen_name":"%s","withSafetyModeUserFields":true}`, screenName))
 		graphQuery.Set("features", `{"hidden_profile_likes_enabled":false,"hidden_profile_subscriptions_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":false,"subscriptions_verification_info_verified_since_enabled":true,"highlights_tweets_tab_ui_enabled":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true}`)
 		graphQuery.Set("fieldToggles", `{"withAuxiliaryUserLabels":false}`)
 
-	}, func(responseBody io.Reader) (*slack.Attachment, error) {
-		return extractProfile(responseBody)
-	})
+	}, &userContainer); err != nil {
+		return nil, fmt.Errorf("fetch user by screen name: %w", err)
+	}
+
+	return extractProfile(userContainer)
 }
 
-func extractProfile(responseBody io.Reader) (*slack.Attachment, error) {
-
-	userContainer := userContainer{}
-
-	//tr := io.TeeReader(responseBody, os.Stdout)
-
-	if err := json.NewDecoder(responseBody).Decode(&userContainer); err != nil {
-		return nil, fmt.Errorf("json decode: %w", err)
-	}
-	//fmt.Println("")
+func extractProfile(userContainer userContainer) (*slack.Attachment, error) {
 
 	userLegacy := userContainer.Data.User.Result.Legacy
 

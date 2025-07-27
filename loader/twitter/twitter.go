@@ -40,7 +40,7 @@ func FetchTwitter(uri *url.URL) (*slack.Attachment, error) {
 }
 
 func fetchTweet(idStr string) (*slack.Attachment, error) {
-	atch, err := fetchFromAPI(idStr)
+	atch, err := extendTweetByAPI(idStr)
 	if err == nil {
 		return atch, nil
 	}

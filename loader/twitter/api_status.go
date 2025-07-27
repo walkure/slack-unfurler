@@ -1,114 +1,40 @@
 package twitter
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
 	"net/url"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/slack-go/slack"
 )
 
-// authHeader contains Bearer Token
-const authHeader = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+func FetchTweetStatus(idStr string) (*StatusResultWrapper, error) {
 
-// csrfToken should be [a-f0-9]{32}
-const csrfToken = "12345678901234567890123456789012"
+	statusContainer := statusContainer{}
 
-var authTokenList = os.Getenv("TWITTER_AUTH_TOKENS_FROM_BROWSER")
-var guestApiID = os.Getenv("TWITTER_GUEST_API_ID")
-var loginApiID = os.Getenv("TWITTER_LOGIN_API_ID")
-
-func fetchFromAPI(idStr string) (*slack.Attachment, error) {
-	return fetchAPI("TweetResultByRestId", guestApiID, func(graphQuery url.Values) {
+	if err := invokeGraphQL("TweetResultByRestId", guestApiID, func(graphQuery url.Values) {
 		graphQuery.Set("variables", fmt.Sprintf(`{"tweetId":"%s","withCommunity":false,"includePromotedContent":false,"withVoice":false}`, idStr))
 		graphQuery.Set("features", `{"creator_subscriptions_tweet_preview_api_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"responsive_web_media_download_video_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_enhance_cards_enabled":false}`)
 		graphQuery.Set("fieldToggles", `{"withArticleRichContentState":false,"withAuxiliaryUserLabels":false}`)
-	}, func(responseBody io.Reader) (*slack.Attachment, error) {
-		return extractStatus(responseBody)
-	})
+	}, &statusContainer); err != nil {
+		return nil, fmt.Errorf("fetch tweet from API: %w", err)
+	}
+
+	return &statusContainer.Data.TweetResult.Result, nil
 }
 
-func fetchAPI(apiName string, apiID string, queryFactory func(graphQuery url.Values), responseProcessor func(responseBody io.Reader) (*slack.Attachment, error)) (*slack.Attachment, error) {
-	if authTokenList == "" {
-		return nil, errors.New("cannot get auth_token. disable apicall")
-	}
+func extendTweetByAPI(idStr string) (*slack.Attachment, error) {
 
-	if apiID == "" {
-		return nil, errors.New("cannot get api_id. disable apicall")
-	}
-
-	authTokens := strings.Split(authTokenList, ",")
-	rand.Shuffle(len(authTokens), func(i, j int) { authTokens[i], authTokens[j] = authTokens[j], authTokens[i] })
-
-	endpoint, err := url.Parse(fmt.Sprintf("https://twitter.com/i/api/graphql/%s/%s", apiID, apiName))
+	result, err := FetchTweetStatus(idStr)
 	if err != nil {
-		return nil, fmt.Errorf("url parse error: %w", err)
+		return nil, fmt.Errorf("fetch tweet by API: %w", err)
 	}
 
-	q := endpoint.Query()
-	queryFactory(q)
-	endpoint.RawQuery = q.Encode()
-
-	for _, authToken := range authTokens {
-		req, _ := http.NewRequest("GET", endpoint.String(), nil)
-		req.Header.Set("Authorization", authHeader)
-		req.Header.Set("Cookie", fmt.Sprintf("auth_token=%s; ct0=%s; ", authToken, csrfToken))
-		req.Header.Set("x-twitter-active-user", "yes")
-		req.Header.Set("x-twitter-auth-type", "OAuth2Session")
-		req.Header.Set("x-twitter-client-language", "en")
-		req.Header.Set("x-csrf-token", csrfToken)
-		req.Header.Set("User-Agent", userAgent)
-
-		res, err := http.DefaultClient.Do(req)
-
-		if err != nil {
-			return nil, fmt.Errorf("http/api transport error: %w", err)
-		}
-
-		if res.StatusCode == http.StatusOK {
-			defer func() {
-				io.Copy(io.Discard, res.Body)
-				res.Body.Close()
-			}()
-			return responseProcessor(res.Body)
-		}
-
-		io.Copy(io.Discard, res.Body)
-		res.Body.Close()
-		fmt.Printf("HTTP status:%d Token:%s\n", res.StatusCode, authToken)
-
-		switch res.StatusCode {
-		case http.StatusUnauthorized:
-		case http.StatusTooManyRequests:
-			continue
-		case http.StatusNotFound:
-			return nil, errors.New("status not found or deleted")
-		default:
-			return nil, fmt.Errorf("http/api status error:%d", res.StatusCode)
-		}
-	}
-	return nil, errors.New("no valid auth_token remained")
+	return extractSlackStatus(result)
 }
 
-func extractStatus(responseBody io.Reader) (*slack.Attachment, error) {
-	statusContainer := statusContainer{}
+func extractSlackStatus(result *StatusResultWrapper) (*slack.Attachment, error) {
 
-	//tr := io.TeeReader(responseBody, os.Stdout)
-
-	if err := json.NewDecoder(responseBody).Decode(&statusContainer); err != nil {
-		return nil, fmt.Errorf("json decode: %w", err)
-	}
-	// fmt.Println("")
-
-	result := statusContainer.Data.TweetResult.Result
 	legacyTweet := result.Legacy
 	noteTweet := result.NoteTweet.NoteTweetResults.Result
 	user := result.Core.UserResults.Result.Legacy
@@ -281,7 +207,7 @@ type statusResultCommonEntity struct {
 	} `json:"quoted_status_result"`
 }
 
-type statusResultWrapper struct {
+type StatusResultWrapper struct {
 	statusResultEntity
 	QuotedStatusResult struct {
 		Result statusResultEntity `json:"result"`
@@ -291,7 +217,7 @@ type statusResultWrapper struct {
 type statusContainer struct {
 	Data struct {
 		TweetResult struct {
-			Result statusResultWrapper `json:"result"`
+			Result StatusResultWrapper `json:"result"`
 		} `json:"tweetResult"`
 	} `json:"data"`
 }

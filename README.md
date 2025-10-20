@@ -24,14 +24,13 @@ SlackのURL展開を[go](https://github.com/slack-go/slack)でやってみた。
    1. ブラウザでログインした際にCookieへセットされた`auth_token`をいくつか取得して`TWITTER_AUTH_TOKENS_FROM_BROWSER`にカンマ区切りで設定する。
       1. この値は1年間有効の模様。
       2. 念のために日頃使ってるアカウントの値は使わないほうがいいでしょう。
-   2. `TWITTER_GUEST_API_ID`と`TWITTER_LOGIN_API_ID`を設定
-      1. 非ログイン状態でTweetを表示する際`TweetResultByRestId`を呼び出すURIのうちID部分を`TWITTER_GUEST_API_ID`に設定
-         1. `https://twitter.com/i/api/graphql/0hWvDhmW8YQ-S_ib3azIrw/TweetResultByRestId?variables(以下略)`のとき`0hWvDhmW8YQ-S_ib3azIrw`の部分
-      2. ログイン状態でユーザプロファイルを表示する際に`UserByScreenName`を呼び出すURIのうちID部分を`TWITTER_LOGIN_API_ID`に設定
-         1. `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName(以下略)`のとき、`G3KGOASz96M-Qu0nwmGXNg`の部分
-      3. どうやら時々変わる様子。
-   3. API呼び出しでの展開に失敗する場合 or 設定がない場合は埋め込みTweet展開を試します。このときNSFW Tweetは展開できません。
+      3. 所謂NSFW画像を展開する場合はTwitterのプロファイル設定で「センシティブな内容を含む可能性のあるメディアを表示する」をチェックした状態で`auth_token`を取得する必要がある模様。
+   2. API呼び出しでの展開に失敗する場合 or 設定がない場合は埋め込みTweet展開を試します。このときNSFW Tweetは展開できません。
 7. 起動
+
+### API IDについて
+
+API IDが変わるとGraphQL引数が変わる場合を観測(API IDだけ変えたら400エラーが返ってきた)したのでAPI IDは埋め込みました。
 
 ## 展開情報のキャッシュについて
 
@@ -67,7 +66,7 @@ Twitterの展開は、埋め込みTweetを取得する方法とAPI経由する�
 
 ## 言語
 
-go 1.20
+go 1.23
 
 ## todo
 

@@ -37,32 +37,48 @@ func extractSlackStatus(result *StatusResultWrapper) (*slack.Attachment, error) 
 
 	legacyTweet := result.Legacy
 	noteTweet := result.NoteTweet.NoteTweetResults.Result
-	user := result.Core.UserResults.Result.Legacy
+	userResult := result.Core.UserResults.Result
+
+	legacyUser := userResult.Legacy
 	qtResult := result.QuotedStatusResult.Result
 
 	if result.RestID == "" {
 		legacyTweet = result.Tweet.Legacy
 		noteTweet = result.Tweet.NoteTweet.NoteTweetResults.Result
-		user = result.Tweet.Core.UserResults.Result.Legacy
+		userResult = result.Tweet.Core.UserResults.Result
+
+		legacyUser = userResult.Legacy
 		if result.Tweet.QuotedStatusResult.Result != nil {
 			qtResult = *result.Tweet.QuotedStatusResult.Result
 		}
 	}
 
+	// user backfills
+	if userResult.Avatar.ImageUrl != "" {
+		legacyUser.ProfileImageURLHTTPS = userResult.Avatar.ImageUrl
+	}
+	if userResult.Core.ScreenName != "" {
+		legacyUser.ScreenName = userResult.Core.ScreenName
+		legacyUser.Name = userResult.Core.Name
+	}
+	if legacyUser.IDStr == "" {
+		legacyUser.IDStr = userResult.RestID
+	}
+
 	var tweetText string
-	var entities []urlShortenEntity
+	var entities UrlShortenEntities
 
 	if noteTweet.ID != "" {
 		tweetText = noteTweet.Text
 		// note tweet has no explicit screen_name in conversation
-		entities = noteTweet.EntitySet.getShortenURLs("", "")
+		entities = noteTweet.EntitySet.GetShortenURLs("", "")
 	} else {
 		tweetText = legacyTweet.FullText
-		entities = legacyTweet.Entities.getShortenURLs(legacyTweet.ConversationIDStr, legacyTweet.InReplyToUserIDStr)
+		entities = legacyTweet.Entities.GetShortenURLs(legacyTweet.ConversationIDStr, legacyTweet.InReplyToUserIDStr)
 	}
 
 	blocks := []slack.Block{
-		getUserBlock(user),
+		getUserBlock(legacyUser),
 		getTweetBlock(tweetText, entities),
 	}
 	for _, p := range legacyTweet.ExtendedEntities.Media {
@@ -75,11 +91,25 @@ func extractSlackStatus(result *StatusResultWrapper) (*slack.Attachment, error) 
 	if legacyTweet.QuotedStatusIDStr != "" {
 		qtLegacy := qtResult.Legacy
 		qtNote := qtResult.NoteTweet.NoteTweetResults.Result
-		qtuser := qtResult.Core.UserResults.Result.Legacy
+		qtUserResult := qtResult.Core.UserResults.Result
+		qtLegacyUser := qtUserResult.Legacy
 		if qtResult.RestID == "" {
 			qtLegacy = qtResult.Tweet.Legacy
-			qtuser = qtResult.Tweet.Core.UserResults.Result.Legacy
+			qtUserResult = qtResult.Tweet.Core.UserResults.Result
+			qtLegacyUser = qtUserResult.Legacy
 			qtNote = qtResult.Tweet.NoteTweet.NoteTweetResults.Result
+		}
+
+		// user backfills
+		if qtUserResult.Avatar.ImageUrl != "" {
+			qtLegacyUser.ProfileImageURLHTTPS = qtUserResult.Avatar.ImageUrl
+		}
+		if qtUserResult.Core.ScreenName != "" {
+			qtLegacyUser.ScreenName = qtUserResult.Core.ScreenName
+			qtLegacyUser.Name = qtUserResult.Core.Name
+		}
+		if qtLegacyUser.IDStr == "" {
+			qtLegacyUser.IDStr = qtUserResult.RestID
 		}
 
 		if qtLegacy.IDStr == "" && qtNote.ID == "" {
@@ -98,17 +128,17 @@ func extractSlackStatus(result *StatusResultWrapper) (*slack.Attachment, error) 
 		} else {
 			if qtNote.ID != "" {
 				tweetText = qtNote.Text
-				entities = qtNote.EntitySet.getShortenURLs("", "")
+				entities = qtNote.EntitySet.GetShortenURLs("", "")
 			} else {
 				tweetText = qtLegacy.FullText
-				entities = qtLegacy.Entities.getShortenURLs(qtLegacy.ConversationIDStr, qtLegacy.InReplyToUserIDStr)
+				entities = qtLegacy.Entities.GetShortenURLs(qtLegacy.ConversationIDStr, qtLegacy.InReplyToUserIDStr)
 			}
 
 			blocks = append(blocks,
 				&slack.DividerBlock{
 					Type: slack.MBTDivider,
 				},
-				getUserBlock(qtuser),
+				getUserBlock(qtLegacyUser),
 				getTweetBlock(tweetText, entities),
 			)
 
@@ -145,7 +175,7 @@ type statusLegacyEntity struct {
 	FullText         string               `json:"full_text"`
 	Entities         externalLinkEntities `json:"entities"`
 	ExtendedEntities struct {
-		Media []mediaEntity `json:"media"`
+		Media []MediaEntity `json:"media"`
 	} `json:"extended_entities"`
 	SelfThread struct {
 		ID    int64  `json:"id"`
@@ -198,7 +228,15 @@ type statusResultCommonEntity struct {
 				ID             string     `json:"id"`
 				RestID         string     `json:"rest_id"`
 				IsBlueVerified bool       `json:"is_blue_verified"`
-				Legacy         userEntity `json:"legacy"`
+				Legacy         UserEntity `json:"legacy"`
+				Core           struct {
+					CreatedAt  rubyDateTime `json:"created_at"`
+					Name       string       `json:"name"`
+					ScreenName string       `json:"screen_name"`
+				} `json:"core"`
+				Avatar struct {
+					ImageUrl string `json:"image_url"`
+				} `json:"avatar"`
 			} `json:"result"`
 		} `json:"user_results"`
 	} `json:"core"`

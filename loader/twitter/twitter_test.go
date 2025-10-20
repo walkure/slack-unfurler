@@ -7,13 +7,13 @@ import (
 func Test_extractShortenURL(t *testing.T) {
 	tests := []struct {
 		name  string
-		args  []urlShortenEntity
+		args  UrlShortenEntities
 		input string
 		want  string
 	}{
 		{
 			name: "from https://developer.twitter.com/en/docs/twitter-api/v1/data-dictionary/object-model/entities",
-			args: []urlShortenEntity{
+			args: UrlShortenEntities{
 				{
 					DisplayURL:  "dev.twitter.com",
 					ExpandedURL: "http://dev.twitter.com",
@@ -32,7 +32,7 @@ func Test_extractShortenURL(t *testing.T) {
 		},
 		{
 			name: "from https://twitter.com/WhiteHouse/status/1663319306820546563",
-			args: []urlShortenEntity{
+			args: UrlShortenEntities{
 				{
 					DisplayURL:  "VA.gov/PAC",
 					ExpandedURL: "http://VA.gov/PACT",
@@ -52,7 +52,7 @@ func Test_extractShortenURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := extractShortenURL(tt.input, tt.args); got != tt.want {
+			if got := tt.args.ExtractShortenURLs(tt.input, ExtractUrlMrkDwn); got != tt.want {
 				t.Errorf("extractShortenURL() = %v, want %v", got, tt.want)
 			}
 		})

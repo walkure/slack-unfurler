@@ -20,8 +20,11 @@ const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 const csrfToken = "12345678901234567890123456789012"
 
 var authTokenList = os.Getenv("TWITTER_AUTH_TOKENS_FROM_BROWSER")
-var guestApiID = os.Getenv("TWITTER_GUEST_API_ID")
-var loginApiID = os.Getenv("TWITTER_LOGIN_API_ID")
+
+const (
+	guestApiID = "0hWvDhmW8YQ-S_ib3azIrw"
+	loginApiID = "nY41FoLr4zUD9yxSjIvNew"
+)
 
 func invokeGraphQL(apiName string, apiID string, queryFactory func(graphQuery url.Values), response any) error {
 	if authTokenList == "" {
@@ -66,6 +69,7 @@ func invokeGraphQL(apiName string, apiID string, queryFactory func(graphQuery ur
 				res.Body.Close()
 			}()
 			//tr := io.TeeReader(res.Body, os.Stdout)
+			//return json.NewDecoder(tr).Decode(response)
 			return json.NewDecoder(res.Body).Decode(response)
 		}
 

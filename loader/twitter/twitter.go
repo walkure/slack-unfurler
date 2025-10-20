@@ -65,10 +65,12 @@ func sanitizeIdStr(idStr string) string {
 	return string(b[:j])
 }
 
+type UrlShortenEntities []urlShortenEntity
+
 type externalLinkEntities struct {
-	Urls []urlShortenEntity `json:"urls"`
+	Urls UrlShortenEntities `json:"urls"`
 	// Media is exists in legacy tweet only
-	Media        []urlShortenEntity  `json:"media"`
+	Media        UrlShortenEntities  `json:"media"`
 	UserMentions []userMentionEntity `json:"user_mentions"`
 	Hashtags     []hashtagEntity     `json:"hashtags"`
 }
@@ -92,8 +94,8 @@ type hashtagEntity struct {
 	Text    string `json:"text"`
 }
 
-func (e externalLinkEntities) getShortenURLs(replyMsgID, replyUID string) []urlShortenEntity {
-	ret := make([]urlShortenEntity, 0, len(e.Urls)+len(e.Media)+len(e.UserMentions)+len(e.Hashtags))
+func (e externalLinkEntities) GetShortenURLs(replyMsgID, replyUID string) UrlShortenEntities {
+	ret := make(UrlShortenEntities, 0, len(e.Urls)+len(e.Media)+len(e.UserMentions)+len(e.Hashtags))
 
 	ret = append(ret, e.Urls...)
 	ret = append(ret, e.Media...)
@@ -102,8 +104,8 @@ func (e externalLinkEntities) getShortenURLs(replyMsgID, replyUID string) []urlS
 	return ret
 }
 
-func convertToShortenURLs(userMentions []userMentionEntity, hashtags []hashtagEntity, replyMsgID, replyUID string) []urlShortenEntity {
-	shortenURLs := make([]urlShortenEntity, 0, len(userMentions)+len(hashtags))
+func convertToShortenURLs(userMentions []userMentionEntity, hashtags []hashtagEntity, replyMsgID, replyUID string) UrlShortenEntities {
+	shortenURLs := make(UrlShortenEntities, 0, len(userMentions)+len(hashtags))
 	for _, it := range userMentions {
 		target := "https://twitter.com/" + it.ScreenName
 		if it.IDStr == replyUID && replyMsgID != "" {
@@ -126,7 +128,14 @@ func convertToShortenURLs(userMentions []userMentionEntity, hashtags []hashtagEn
 	return shortenURLs
 }
 
-func extractShortenURL(text string, urls []urlShortenEntity) string {
+type ExtractUrlMode int
+
+const (
+	ExtractUrlMarkDown ExtractUrlMode = iota
+	ExtractUrlMrkDwn
+)
+
+func (urls UrlShortenEntities) ExtractShortenURLs(text string, extractUrlMode ExtractUrlMode) string {
 
 	// replace from tail
 	sort.Slice(urls, func(i, j int) bool {
@@ -145,7 +154,13 @@ func extractShortenURL(text string, urls []urlShortenEntity) string {
 		}
 		swapped := append([]rune{}, proceed[:it.Indices[0]]...)
 
-		link := fmt.Sprintf("<%s|%s>", it.ExpandedURL, it.DisplayURL)
+		var link string
+
+		if extractUrlMode == ExtractUrlMrkDwn {
+			link = fmt.Sprintf("<%s|%s>", it.ExpandedURL, it.DisplayURL)
+		} else {
+			link = fmt.Sprintf("[%s](%s)", it.DisplayURL, it.ExpandedURL)
+		}
 
 		swapped = append(swapped, []rune(link)...)
 		swapped = append(swapped, proceed[it.Indices[1]:]...)
@@ -157,8 +172,8 @@ func extractShortenURL(text string, urls []urlShortenEntity) string {
 	return string(proceed)
 }
 
-func getTweetBlock(tweet string, shortenEntities []urlShortenEntity) *slack.SectionBlock {
-	txt := extractShortenURL(tweet, shortenEntities)
+func getTweetBlock(tweet string, shortenEntities UrlShortenEntities) *slack.SectionBlock {
+	txt := shortenEntities.ExtractShortenURLs(tweet, ExtractUrlMrkDwn)
 	return &slack.SectionBlock{
 		Type: slack.MBTSection,
 		Text: &slack.TextBlockObject{
@@ -169,14 +184,14 @@ func getTweetBlock(tweet string, shortenEntities []urlShortenEntity) *slack.Sect
 	}
 }
 
-type userEntity struct {
+type UserEntity struct {
 	IDStr                string `json:"id_str"`
 	Name                 string `json:"name"`
 	ProfileImageURLHTTPS string `json:"profile_image_url_https"`
 	ScreenName           string `json:"screen_name"`
 }
 
-func getUserBlock(user userEntity) *slack.ContextBlock {
+func getUserBlock(user UserEntity) *slack.ContextBlock {
 	return &slack.ContextBlock{
 		Type: slack.MBTContext,
 		ContextElements: slack.ContextElements{
@@ -213,7 +228,7 @@ func getCreatedAtBlock(createdAt time.Time) *slack.ContextBlock {
 	}
 }
 
-type mediaEntity struct {
+type MediaEntity struct {
 	ID            int64  `json:"id"`
 	IDStr         string `json:"id_str"`
 	Indices       []int  `json:"indices"`
@@ -234,7 +249,7 @@ type mediaEntity struct {
 	} `json:"video_info"`
 }
 
-func getMediaBlocks(media mediaEntity) slack.Block {
+func getMediaBlocks(media MediaEntity) slack.Block {
 	if media.Type == "photo" {
 		return slack.ImageBlock{
 			Type:     slack.MBTImage,

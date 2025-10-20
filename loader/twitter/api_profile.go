@@ -73,7 +73,7 @@ func getProfileSummaryBlock(userLegacy userLegacyEntity) *slack.ContextBlock {
 
 func getProfileDescriptionBlock(userLegacy userLegacyEntity) *slack.SectionBlock {
 
-	txt := extractShortenURL(userLegacy.Description, userLegacy.Entities.Description.Urls)
+	txt := userLegacy.Entities.Description.Urls.ExtractShortenURLs(userLegacy.Description, ExtractUrlMrkDwn)
 	p := strings.Replace(userLegacy.ProfileImageURLHTTPS, "_normal", "", 1)
 
 	return &slack.SectionBlock{
@@ -97,7 +97,7 @@ func getProfileParamsBlock(userLegacy userLegacyEntity) *slack.ContextBlock {
 
 	elms := []slack.MixedElement{}
 
-	url := extractShortenURL(userLegacy.Url, userLegacy.Entities.Url.Urls)
+	url := userLegacy.Entities.Url.Urls.ExtractShortenURLs(userLegacy.Url, ExtractUrlMrkDwn)
 	if url != "" {
 		url = "🔗 " + url
 		elms = append(elms, slack.TextBlockObject{
@@ -172,10 +172,10 @@ type userLegacyEntity struct {
 	Description         string `json:"description"`
 	Entities            struct {
 		Description struct {
-			Urls []urlShortenEntity `json:"urls"`
+			Urls UrlShortenEntities `json:"urls"`
 		} `json:"description"`
 		Url struct {
-			Urls []urlShortenEntity `json:"urls"`
+			Urls UrlShortenEntities `json:"urls"`
 		} `json:"url"`
 	} `json:"entities"`
 	FastFollowersCount      int      `json:"fast_followers_count"`

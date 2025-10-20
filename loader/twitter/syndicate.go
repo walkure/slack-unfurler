@@ -33,7 +33,7 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 
 	blocks := []slack.Block{
 		getUserBlock(tweet.User),
-		getTweetBlock(tweet.Text, tweet.Entities.getShortenURLs(tweet.InReplyToStatusIDStr, tweet.InReplyToUserIDStr)),
+		getTweetBlock(tweet.Text, tweet.Entities.GetShortenURLs(tweet.InReplyToStatusIDStr, tweet.InReplyToUserIDStr)),
 	}
 
 	for _, p := range tweet.MediaDetails {
@@ -49,7 +49,7 @@ func fetchFromSyndication(idStr string) (*slack.Attachment, error) {
 		blocks = append(blocks,
 			getUserBlock(qTweet.User),
 			getTweetBlock(qTweet.Text,
-				qTweet.Entities.getShortenURLs(qTweet.InReplyToStatusIDStr, qTweet.InReplyToUserIDStr)),
+				qTweet.Entities.GetShortenURLs(qTweet.InReplyToStatusIDStr, qTweet.InReplyToUserIDStr)),
 		)
 
 		for _, p := range qTweet.Photos {
@@ -71,8 +71,8 @@ type tweetInternalEntity struct {
 	Entities     externalLinkEntities `json:"entities"`
 	IDStr        string               `json:"id_str"`
 	Text         string               `json:"text"`
-	User         userEntity           `json:"user"`
-	MediaDetails []mediaEntity        `json:"mediaDetails"`
+	User         UserEntity           `json:"user"`
+	MediaDetails []MediaEntity        `json:"mediaDetails"`
 	Photos       []struct {
 		ExpandedURL string `json:"expandedUrl"`
 		URL         string `json:"url"`
